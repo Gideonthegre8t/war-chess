@@ -1,0 +1,1167 @@
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  min-height: 100vh;
+  background: #0d1117;
+  color: #f5f5f5;
+  padding: 20px;
+}
+
+/* =========================
+   TOP BAR
+========================= */
+
+.topbar {
+  width: min(1400px, 100%);
+  margin: 0 auto 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.subtitle {
+  margin-top: 5px;
+  color: #8d96a3;
+  font-size: 13px;
+}
+
+.reset-button {
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #fff;
+
+  padding: 10px 16px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #21262d;
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+
+.game-layout {
+  width: min(1400px, 100%);
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(360px, 0.85fr);
+
+  gap: 18px;
+
+  align-items: start;
+}
+
+/* =========================
+   PANELS
+========================= */
+
+.chess-panel,
+.warzone-panel {
+  background: #161b22;
+
+  border: 1px solid #30363d;
+
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  min-width: 0;
+}
+
+.chess-panel {
+  padding: 20px;
+}
+
+.warzone-panel {
+  padding: 20px;
+}
+
+/* =========================
+   PANEL HEADER
+========================= */
+
+.panel-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 20px;
+}
+
+.panel-label {
+  display: block;
+
+  color: #7d8590;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 0.16em;
+
+  margin-bottom: 4px;
+}
+
+.panel-header h1 {
+  margin: 0;
+
+  font-size: 25px;
+}
+
+.turn-indicator,
+.war-status {
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+
+  padding: 7px 10px;
+
+  border-radius: 6px;
+
+  background: #21262d;
+
+  color: #8b949e;
+}
+
+.war-status {
+  color: #7ee787;
+}
+
+/* =========================
+   PLAYER INFORMATION
+========================= */
+
+.player-info {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 16px;
+}
+
+.player {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.player-piece {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.player strong,
+.player small {
+  display: block;
+}
+
+.player strong {
+  font-size: 13px;
+}
+
+.player small {
+  color: #8b949e;
+
+  font-size: 11px;
+
+  margin-top: 2px;
+}
+
+.player-text-right {
+  text-align: right;
+}
+
+/* =========================
+   CHESS BOARD
+========================= */
+
+.board-wrapper {
+  width: min(100%, 560px);
+
+  aspect-ratio: 1 / 1;
+
+  margin: 0 auto;
+
+  flex-shrink: 0;
+
+  container-type: inline-size;
+}
+
+.board {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  aspect-ratio: 1 / 1;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(8, minmax(0, 1fr));
+
+  grid-template-rows:
+    repeat(8, minmax(0, 1fr));
+
+  border: 3px solid #252b33;
+
+  border-radius: 3px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+/* =========================
+   CHESS SQUARE
+========================= */
+
+.square {
+  position: relative;
+
+  border: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  cursor: pointer;
+}
+
+.light-square {
+  background: #e8d5b5;
+}
+
+.dark-square {
+  background: #8b6548;
+}
+
+.square:hover {
+  filter: brightness(1.06);
+}
+
+/* =========================
+   LAST MOVE
+========================= */
+
+.last-move-square {
+  box-shadow:
+    inset 0 0 0 999px rgba(255, 193, 7, 0.32),
+    inset 0 0 0 3px rgba(255, 193, 7, 0.75);
+
+  transition: background-color 0.15s ease;
+}
+
+.last-move-destination {
+  box-shadow:
+    inset 0 0 0 999px rgba(255, 193, 7, 0.42),
+    inset 0 0 0 3px rgba(255, 193, 7, 0.9);
+}
+
+/* =========================
+   SELECTED SQUARE
+========================= */
+
+.selected-square {
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 220, 90, 0.95);
+}
+
+/* =========================
+   CHESS PIECES
+========================= */
+
+.piece {
+  position: relative;
+
+  z-index: 2;
+
+  font-family:
+    "Times New Roman",
+    serif;
+
+  font-size: 10.5cqw;
+
+  line-height: 1;
+
+  user-select: none;
+
+  pointer-events: none;
+
+  transform: translateZ(0);
+}
+
+.white-piece {
+  color: #ffffff;
+
+  text-shadow:
+    0 2px 1px #000000,
+    1px 0 1px #000000,
+    -1px 0 1px #000000;
+}
+
+.black-piece {
+  color: #171717;
+
+  text-shadow:
+    0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+/* =========================
+   LEGAL MOVE INDICATORS
+========================= */
+
+.move-dot {
+  position: absolute;
+
+  width: 18%;
+
+  aspect-ratio: 1 / 1;
+
+  border-radius: 50%;
+
+  background: rgba(20, 20, 20, 0.35);
+
+  pointer-events: none;
+}
+
+.capture-ring {
+  position: absolute;
+
+  inset: 7%;
+
+  border: 4px solid rgba(180, 30, 30, 0.55);
+
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+/* =========================
+   CHESS STATUS
+========================= */
+
+.chess-status {
+  margin-top: 14px;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  color: #8b949e;
+
+  text-align: center;
+}
+
+.move-history {
+  margin-top: 12px;
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  color: #8b949e;
+
+  font-size: 12px;
+}
+
+.move-history strong {
+  color: #fff;
+}
+
+/* =====================================================
+   WARZONE
+===================================================== */
+
+.warzone {
+  position: relative;
+
+  min-height: 570px;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  background: #17221c;
+
+  border: 1px solid #303b32;
+}
+
+/* =========================
+   SKY
+========================= */
+
+.sky {
+  position: absolute;
+
+  inset: 0 0 45% 0;
+
+  background: linear-gradient(
+    180deg,
+    #182431 0%,
+    #344452 55%,
+    #59675c 100%
+  );
+}
+
+/* =========================
+   BATTLEFIELD
+========================= */
+
+.battlefield {
+  position: absolute;
+
+  inset: 35% 0 0;
+
+  overflow: hidden;
+
+  background: #3c4734;
+}
+
+/* =========================
+   TERRITORY
+========================= */
+
+.territory {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+
+  width: 50%;
+}
+
+.territory-white {
+  left: 0;
+
+  background: rgba(100, 130, 75, 0.38);
+
+  transform: skewY(-3deg);
+
+  transform-origin: top;
+}
+
+.territory-black {
+  right: 0;
+
+  background: rgba(95, 80, 58, 0.5);
+
+  transform: skewY(3deg);
+
+  transform-origin: top;
+}
+
+/* =========================
+   MOUNTAINS
+========================= */
+
+.mountain {
+  position: absolute;
+
+  width: 130px;
+  height: 80px;
+
+  background: #303b32;
+
+  clip-path: polygon(
+    50% 0,
+    100% 100%,
+    0 100%
+  );
+
+  opacity: 0.7;
+}
+
+.mountain-one {
+  left: 18%;
+  top: 15%;
+}
+
+.mountain-two {
+  right: 15%;
+  top: 20%;
+}
+
+/* =========================
+   CASTLES
+========================= */
+
+.castle {
+  position: absolute;
+
+  z-index: 4;
+
+  top: 24%;
+
+  text-align: center;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+}
+
+.castle-body {
+  font-size: 55px;
+}
+
+.castle-flag {
+  font-size: 18px;
+}
+
+.castle-white {
+  left: 7%;
+}
+
+.castle-black {
+  right: 7%;
+}
+
+/* =========================
+   ARMIES
+========================= */
+
+.army {
+  position: absolute;
+
+  z-index: 5;
+
+  display: flex;
+
+  gap: 10px;
+
+  font-size: 28px;
+
+  transition: all 0.4s ease;
+}
+
+.army-white {
+  left: 22%;
+  bottom: 35%;
+}
+
+.army-black {
+  right: 22%;
+  bottom: 35%;
+}
+
+.war-high .army {
+  animation:
+    armyMovement 1.2s ease-in-out infinite alternate;
+}
+
+.war-medium .army {
+  animation:
+    armyMovement 2.5s ease-in-out infinite alternate;
+}
+
+.war-low .army {
+  animation:
+    armyMovement 5s ease-in-out infinite alternate;
+}
+
+.war-off .army {
+  opacity: 0.15;
+
+  animation: none;
+}
+
+@keyframes armyMovement {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(18px);
+  }
+}
+
+/* =========================
+   BATTLE LINE
+========================= */
+
+.battle-line {
+  position: absolute;
+
+  z-index: 6;
+
+  left: 47%;
+  bottom: 32%;
+
+  display: flex;
+
+  gap: 8px;
+
+  font-size: 25px;
+
+  animation:
+    clash 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes clash {
+  from {
+    transform: translateX(-8px);
+  }
+
+  to {
+    transform: translateX(8px);
+  }
+}
+
+/* =========================
+   BATTLE MESSAGE
+========================= */
+
+.battle-message {
+  position: absolute;
+
+  z-index: 10;
+
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+
+  padding: 12px 14px;
+
+  border-radius: 8px;
+
+  background: rgba(8, 12, 10, 0.82);
+
+  backdrop-filter: blur(8px);
+
+  color: #d8dee4;
+
+  font-size: 12px;
+
+  line-height: 1.4;
+}
+
+.message-icon {
+  margin-right: 8px;
+}
+
+/* =========================
+   WARZONE CONTROLS
+========================= */
+
+.warzone-controls {
+  margin-top: 16px;
+}
+
+.control-title {
+  color: #8b949e;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  margin-bottom: 8px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.1em;
+}
+
+.intensity-buttons {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 7px;
+}
+
+.intensity-buttons button {
+  border: 1px solid #30363d;
+
+  background: #21262d;
+
+  color: #8b949e;
+
+  padding: 9px 5px;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  text-transform: uppercase;
+
+  font-size: 10px;
+
+  font-weight: 800;
+}
+
+.intensity-buttons button:hover {
+  color: #fff;
+
+  background: #30363d;
+}
+
+.intensity-buttons .active-intensity {
+  background: #30363d;
+
+  color: #fff;
+
+  border-color: #6e7681;
+}
+
+/* =====================================================
+   KING IN CHECK
+===================================================== */
+
+.check-square {
+  background:
+    radial-gradient(
+      circle,
+      rgba(210, 35, 35, 0.75) 0%,
+      rgba(190, 25, 25, 0.45) 42%,
+      rgba(150, 20, 20, 0.18) 72%,
+      transparent 100%
+    ) !important;
+
+  animation:
+    kingSquarePulse 0.55s ease-in-out infinite alternate;
+}
+
+.check-square .piece {
+  animation:
+    kingVibrate 0.12s linear infinite;
+}
+
+@keyframes kingSquarePulse {
+  from {
+    filter: brightness(0.95);
+  }
+
+  to {
+    filter: brightness(1.18);
+  }
+}
+
+@keyframes kingVibrate {
+  0% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-2px);
+  }
+
+  50% {
+    transform: translateX(2px);
+  }
+
+  75% {
+    transform: translateX(-2px);
+  }
+
+  100% {
+    transform: translateX(2px);
+  }
+}
+
+/* =====================================================
+   PAWN PROMOTION
+   =====================================================
+
+   IMPORTANT:
+   There is ONE promotion design here.
+
+   The selector is positioned relative to the entire
+   chess board instead of the pawn square.
+
+   This prevents clipping when a pawn promotes on
+   a1, h1, a8 or h8.
+
+===================================================== */
+
+.board {
+  position: relative;
+}
+
+/* The promotion destination square */
+
+.promotion-target-square {
+  position: relative;
+
+  z-index: 20;
+}
+
+/* =====================================================
+   PROMOTION OVERLAY
+===================================================== */
+
+.promotion-overlay {
+  position: absolute;
+
+  z-index: 1000;
+
+  left: 50%;
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: min(340px, calc(100% - 24px));
+
+  padding: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  border-radius: 12px;
+
+  background: rgba(14, 18, 24, 0.97);
+
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  backdrop-filter: blur(12px);
+
+  animation:
+    promotionAppear 0.16s ease-out;
+
+  pointer-events: auto;
+}
+
+@keyframes promotionAppear {
+  from {
+    opacity: 0;
+
+    transform:
+      translate(-50%, -50%)
+      scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+}
+
+/* =====================================================
+   PROMOTION TITLE
+===================================================== */
+
+.promotion-title {
+  text-align: center;
+
+  margin-bottom: 10px;
+
+  color: #aab2bd;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+
+  text-transform: uppercase;
+}
+
+/* =====================================================
+   PROMOTION OPTIONS
+===================================================== */
+
+.promotion-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 7px;
+}
+
+/* =====================================================
+   PROMOTION CHOICE
+===================================================== */
+
+.promotion-choice {
+  min-width: 0;
+
+  min-height: 78px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  border: 1px solid #30363d;
+
+  border-radius: 8px;
+
+  background: #21262d;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+
+  user-select: none;
+}
+
+.promotion-choice:hover {
+  background: #30363d;
+
+  border-color: #8b949e;
+
+  transform: translateY(-2px);
+}
+
+.promotion-choice:active {
+  transform: translateY(0);
+}
+
+/* =====================================================
+   PROMOTION PIECE
+===================================================== */
+
+.promotion-piece {
+  display: block;
+
+  font-family:
+    "Times New Roman",
+    serif;
+
+  font-size: 42px;
+
+  line-height: 1;
+
+  user-select: none;
+
+  pointer-events: none;
+}
+
+/* WHITE PROMOTION PIECES */
+
+.promotion-overlay-white .promotion-piece {
+  color: #fff;
+
+  text-shadow:
+    0 2px 1px #000,
+    1px 0 1px #000,
+    -1px 0 1px #000;
+}
+
+/* BLACK PROMOTION PIECES */
+
+.promotion-overlay-black .promotion-piece {
+  color: #111;
+
+  text-shadow:
+    0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+/* =====================================================
+   PROMOTION LABEL
+===================================================== */
+
+.promotion-label {
+  color: #8b949e;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+}
+
+.promotion-choice:hover .promotion-label {
+  color: #fff;
+}
+
+/* =====================================================
+   PROMOTION FEEDBACK
+===================================================== */
+
+.feedback-promotion {
+  border-color: #d6a93a;
+
+  color: #ffe39a;
+}
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 1100px) {
+  .game-layout {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(320px, 0.8fr);
+  }
+
+  .board-wrapper {
+    width: min(100%, 500px);
+  }
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 900px) {
+  .app {
+    padding: 12px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chess-panel,
+  .warzone-panel {
+    padding: 14px;
+  }
+
+  .board-wrapper {
+    width: min(100%, 520px);
+
+    aspect-ratio: 1 / 1;
+  }
+
+  .warzone {
+    min-height: 430px;
+  }
+}
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 500px) {
+  .brand {
+    font-size: 17px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .reset-button {
+    padding: 8px 10px;
+
+    font-size: 11px;
+  }
+
+  .player-info {
+    margin-bottom: 10px;
+  }
+
+  .player-piece {
+    font-size: 22px;
+  }
+
+  .player strong {
+    font-size: 11px;
+  }
+
+  .player small {
+    display: none;
+  }
+
+  .board-wrapper {
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+  }
+
+  .warzone {
+    min-height: 360px;
+  }
+
+  .castle-body {
+    font-size: 42px;
+  }
+
+  .army {
+    font-size: 22px;
+  }
+
+  /* =========================
+     MOBILE PROMOTION
+  ========================= */
+
+  .promotion-overlay {
+    width: min(320px, calc(100% - 16px));
+
+    padding: 10px;
+  }
+
+  .promotion-options {
+    gap: 5px;
+  }
+
+  .promotion-choice {
+    min-height: 64px;
+
+    border-radius: 6px;
+  }
+
+  .promotion-piece {
+    font-size: 32px;
+  }
+
+  .promotion-label {
+    font-size: 7px;
+  }
+
+  .promotion-title {
+    font-size: 8px;
+
+    margin-bottom: 7px;
+  }
+}
