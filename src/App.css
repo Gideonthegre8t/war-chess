@@ -1165,3 +1165,755 @@ button {
     margin-bottom: 7px;
   }
 }
+
+/* =========================================================
+   GAME OVER OVERLAY
+========================================================= */
+
+.board {
+  position: relative;
+}
+
+/*
+  Covers the chess board only.
+  The board itself remains visible underneath.
+*/
+
+.game-over-overlay {
+  position: absolute;
+  inset: 0;
+
+  z-index: 200;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(5, 8, 12, 0.72);
+
+  backdrop-filter: blur(5px);
+
+  animation: gameOverFadeIn 0.2s ease-out;
+}
+
+/* =========================
+   CARD
+========================= */
+
+.game-over-card {
+  width: min(360px, 90%);
+
+  padding: 28px 22px;
+
+  text-align: center;
+
+  border: 1px solid rgba(255, 255, 255, 0.16);
+
+  border-radius: 12px;
+
+  background: rgba(14, 18, 24, 0.97);
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  animation: gameOverCardIn 0.22s ease-out;
+}
+
+/* =========================
+   ICON
+========================= */
+
+.game-over-icon {
+  font-size: 42px;
+
+  line-height: 1;
+
+  margin-bottom: 12px;
+}
+
+/* =========================
+   LABEL
+========================= */
+
+.game-over-label {
+  color: #8b949e;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.18em;
+
+  margin-bottom: 6px;
+}
+
+/* =========================
+   TITLE
+========================= */
+
+.game-over-title {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 25px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+}
+
+/* =========================
+   WINNER
+========================= */
+
+.game-over-winner {
+  margin-top: 7px;
+
+  color: #ffe39a;
+
+  font-size: 13px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.12em;
+}
+
+/* =========================
+   DESCRIPTION
+========================= */
+
+.game-over-description {
+  margin: 14px auto 8px;
+
+  max-width: 280px;
+
+  color: #8b949e;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+/* =========================
+   RESULT
+========================= */
+
+.game-over-result {
+  margin-top: 8px;
+
+  color: #d8dee4;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+}
+
+/* =========================
+   BUTTON
+========================= */
+
+.game-over-button {
+  margin-top: 20px;
+
+  width: 100%;
+
+  padding: 11px 16px;
+
+  border: 1px solid #6e7681;
+
+  border-radius: 7px;
+
+  background: #21262d;
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.game-over-button:hover {
+  background: #30363d;
+
+  border-color: #8b949e;
+
+  transform: translateY(-1px);
+}
+
+.game-over-button:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+
+@keyframes gameOverFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gameOverCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =========================
+   GAME OVER OVERLAY MOBILE
+========================= */
+
+@media (max-width: 500px) {
+  .game-over-card {
+    width: min(320px, 92%);
+
+    padding: 22px 18px;
+  }
+
+  .game-over-icon {
+    width: 50px;
+    height: 50px;
+
+    font-size: 28px;
+  }
+
+  .game-over-title {
+    font-size: 16px;
+  }
+
+  .game-over-description {
+    font-size: 10px;
+  }
+
+  .game-over-winner {
+    font-size: 11px;
+  }
+
+  .game-over-result {
+    font-size: 9px;
+  }
+}
+
+/* =========================
+   GAME FEEDBACK
+========================= */
+
+.game-feedback {
+  position: fixed;
+
+  top: 16px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  z-index: 1500;
+
+  padding: 10px 18px;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  border-radius: 8px;
+
+  background: rgba(22, 27, 34, 0.95);
+
+  backdrop-filter: blur(8px);
+
+  color: #f0f3f6;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45);
+
+  animation:
+    feedbackIn 0.15s ease-out;
+
+  pointer-events: none;
+}
+
+.feedback-check {
+  border-color: rgba(210, 153, 34, 0.6);
+
+  color: #ffe39a;
+}
+
+.feedback-checkmate {
+  border-color: rgba(210, 35, 35, 0.65);
+
+  color: #ff9e9e;
+}
+
+.feedback-draw {
+  border-color: rgba(139, 148, 158, 0.6);
+
+  color: #d8dee4;
+}
+
+.feedback-illegal {
+  border-color: rgba(180, 30, 30, 0.6);
+
+  color: #ff8f8f;
+}
+
+.feedback-promotion {
+  border-color: #d6a93a;
+
+  color: #ffe39a;
+}
+
+@keyframes feedbackIn {
+  from {
+    opacity: 0;
+
+    transform:
+      translate(-50%, -6px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(-50%);
+  }
+}
+
+/* =====================================================
+   LOBBY
+===================================================== */
+
+.lobby {
+  width: min(500px, 100%);
+  margin: 40px auto;
+  padding: 30px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.lobby h2 {
+  margin: 0 0 24px 0;
+  color: #f0f3f6;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.lobby-section {
+  margin-bottom: 20px;
+}
+
+.create-room-btn,
+.join-room-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid #6e7681;
+  border-radius: 8px;
+  background: #21262d;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.create-room-btn:hover,
+.join-room-btn:hover {
+  background: #30363d;
+  border-color: #8b949e;
+  transform: translateY(-1px);
+}
+
+.create-room-btn:disabled,
+.join-room-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.room-code-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: #0d1117;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.room-code-input::placeholder {
+  color: #484f58;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  font-weight: 400;
+}
+
+.room-code-input:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.lobby-error {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid rgba(180, 30, 30, 0.6);
+  border-radius: 8px;
+  background: rgba(180, 30, 30, 0.1);
+  color: #ff8f8f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lobby-status {
+  margin-top: 20px;
+  color: #8b949e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* =====================================================
+   TOPBAR ACTIONS
+===================================================== */
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-code {
+  padding: 8px 14px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #7ee787;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+/* =====================================================
+   DIFFICULTY SELECTOR
+===================================================== */
+
+.difficulty-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.difficulty-selector label {
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.difficulty-selector select {
+  padding: 6px 10px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.difficulty-selector select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+/* =====================================================
+   PUZZLE NAVIGATION
+===================================================== */
+
+.puzzle-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.puzzle-nav button {
+  padding: 6px 12px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.puzzle-nav button:hover {
+  background: #30363d;
+  border-color: #6e7681;
+}
+
+.puzzle-nav span {
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   BACK BUTTON
+===================================================== */
+
+.back-button {
+  padding: 8px 14px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.back-button:hover {
+  background: #30363d;
+  border-color: #6e7681;
+}
+
+/* =====================================================
+   PUZZLE INFO
+===================================================== */
+
+.puzzle-info {
+  width: min(1400px, 100%);
+  margin: 0 auto 16px;
+  padding: 16px 20px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.puzzle-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.puzzle-category {
+  font-size: 12px;
+  color: #8b949e;
+  margin-bottom: 12px;
+}
+
+.puzzle-hint {
+  padding: 12px;
+  background: #21262d;
+  border: 1px solid #e3b341;
+  border-radius: 8px;
+  color: #e3b341;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.hint-button {
+  padding: 8px 16px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e3b341;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hint-button:hover {
+  background: #30363d;
+  border-color: #e3b341;
+}
+
+/* =====================================================
+   CONTROL GROUP
+===================================================== */
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* =====================================================
+   TIME CONTROL SELECTOR
+===================================================== */
+
+.time-control-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-control-selector label {
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.time-control-selector select {
+  padding: 6px 10px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.time-control-selector select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+/* =====================================================
+   PUZZLE CONTROLS
+===================================================== */
+
+.puzzle-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.level-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.level-selector label {
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.level-selector select {
+  padding: 6px 10px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.level-selector select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.puzzle-progress {
+  color: #7ee787;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+/* =====================================================
+   PUZZLE LEVEL BADGE
+===================================================== */
+
+.puzzle-level-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #58a6ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.puzzle-concepts {
+  color: #8b949e;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+/* =====================================================
+   GAME MAIN CONTENT
+===================================================== */
+
+.game-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* =====================================================
+   RESPONSIVE - PUZZLE CONTROLS
+===================================================== */
+
+@media (max-width: 1200px) {
+  .puzzle-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .control-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 500px) {
+  .puzzle-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .level-selector,
+  .puzzle-nav {
+    justify-content: center;
+  }
+}
