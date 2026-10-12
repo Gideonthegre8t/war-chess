@@ -595,13 +595,13 @@ export const PUZZLE_LEVELS = [
 
 // Get total number of puzzles
 export const getTotalPuzzles = () => {
-  return PUZZLES_LEVELS.reduce((total, level) => total + level.puzzles.length, 0);
+  return PUZZLE_LEVELS.reduce((total, level) => total + level.puzzles.length, 0);
 };
 
 // Get puzzle by global index
 export const getPuzzleByIndex = (index) => {
   let count = 0;
-  for (const level of PUZZLES_LEVELS) {
+  for (const level of PUZZLE_LEVELS) {
     for (const puzzle of level.puzzles) {
       if (count === index) {
         return { level, puzzle };

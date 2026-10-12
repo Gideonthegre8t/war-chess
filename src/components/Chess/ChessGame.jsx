@@ -14,6 +14,7 @@ function ChessGame({
   onPromotion,
   gameResult,
   resetGame,
+  warzoneLevel,
 }) {
   return (
     <section className="chess-panel">
@@ -63,6 +64,8 @@ function ChessGame({
         onPromotion={onPromotion}
         gameResult={gameResult}
         resetGame={resetGame}
+        game={game}
+        warzoneLevel={warzoneLevel}
       />
 
 

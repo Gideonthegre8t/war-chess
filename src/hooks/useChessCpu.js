@@ -3,135 +3,7 @@ import { Chess } from 'chess.js';
 import { useChessAI } from './useChessAI';
 import { playSound } from '../utils/sound';
 import { files, ranks } from '../utils/chessConstants';
-
-const getPositionKey = (chess) => {
-  if (typeof chess.hash === 'function') {
-    return chess.hash();
-  }
-  return chess.fen().split(' ').slice(0, 4).join(' ');
-};
-
-const getGameResult = (chess, positionCounts) => {
-  const positionKey = getPositionKey(chess);
-  const repetitionCount = positionCounts[positionKey] || 1;
-  const halfmoveClock = Number(chess.fen().split(' ')[4]) || 0;
-  const isThreefoldRepetition = repetitionCount >= 3;
-  const isFivefoldRepetition = repetitionCount >= 5;
-  const isFiftyMoveDraw = halfmoveClock >= 100;
-  const isSeventyFiveMoveDraw = halfmoveClock >= 150;
-
-  if (chess.isCheckmate()) {
-    const winner = chess.turn() === 'w' ? 'b' : 'w';
-    return {
-      over: true,
-      type: 'checkmate',
-      winner,
-      message: 'CHECKMATE',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (chess.isStalemate()) {
-    return {
-      over: true,
-      type: 'stalemate',
-      message: 'DRAW - STALEMATE',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (chess.isInsufficientMaterial()) {
-    return {
-      over: true,
-      type: 'insufficient-material',
-      message: 'DRAW - INSUFFICIENT MATERIAL',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (isFivefoldRepetition) {
-    return {
-      over: true,
-      type: 'fivefold-repetition',
-      message: 'DRAW - FIVEFOLD REPETITION',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (isSeventyFiveMoveDraw) {
-    return {
-      over: true,
-      type: 'seventy-five-move',
-      message: 'DRAW - 75-MOVE RULE',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (isThreefoldRepetition) {
-    return {
-      over: true,
-      type: 'threefold-repetition',
-      message: 'DRAW - THREEFOLD REPETITION',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  if (isFiftyMoveDraw) {
-    return {
-      over: true,
-      type: 'fifty-move',
-      message: 'DRAW - 50-MOVE RULE',
-      repetitionCount,
-      halfmoveClock,
-      isThreefoldRepetition,
-      isFivefoldRepetition,
-      isFiftyMoveDraw,
-      isSeventyFiveMoveDraw,
-    };
-  }
-
-  return {
-    over: false,
-    type: null,
-    message: null,
-    repetitionCount,
-    halfmoveClock,
-    isThreefoldRepetition,
-    isFivefoldRepetition,
-    isFiftyMoveDraw,
-    isSeventyFiveMoveDraw,
-  };
-};
+import { getGameResult, getPositionKey } from '../utils/gameResult';
 
 export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
   const [game, setGame] = useState(() => new Chess());
@@ -145,6 +17,8 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
     return { [initialKey]: 1 };
   });
   const [isThinking, setIsThinking] = useState(false);
+  const [retreatedColor, setRetreatedColor] = useState(null);
+  const [timeoutLoser, setTimeoutLoser] = useState(null);
 
   const { getBestMove } = useChessAI();
 
@@ -176,7 +50,23 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
 
   const checkedKingSquare = game.isCheck() ? findKingSquare(game.turn()) : null;
 
-  const gameResult = getGameResult(game, positionCounts);
+  const gameResult = retreatedColor
+    ? {
+        over: true,
+        type: 'resignation',
+        winner: retreatedColor === 'w' ? 'b' : 'w',
+        message: retreatedColor === 'w' ? '🏳️ WHITE RETREATS' : '🏳️ BLACK RETREATS',
+        retreatColor: retreatedColor,
+      }
+    : timeoutLoser
+      ? {
+          over: true,
+          type: 'timeout',
+          winner: timeoutLoser === 'w' ? 'b' : 'w',
+          message: timeoutLoser === 'w' ? '⏰ WHITE RUNS OUT OF TIME' : '⏰ BLACK RUNS OUT OF TIME',
+          timeoutLoser,
+        }
+      : getGameResult(game, positionCounts);
 
   const updatePositionCounts = (nextGame) => {
     const nextPositionKey = getPositionKey(nextGame);
@@ -217,6 +107,7 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
           to: moveResult.to,
           captured: Boolean(moveResult.captured),
           piece: moveResult.piece,
+          promotion: moveResult.promotion || null,
         });
 
         if (nextResult.over) {
@@ -319,6 +210,16 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
     setPromotionState(null);
   }, [promotionState, gameResult.over, makeMove]);
 
+  const resign = useCallback(() => {
+    if (gameResult.over) return;
+    setRetreatedColor(playerColor);
+  }, [gameResult.over, playerColor]);
+
+  const offerDraw = () => {
+    if (gameResult.over) return;
+    showFeedback('🤝 The CPU general declines your offer of peace', 'illegal');
+  };
+
   const resetGame = () => {
     const newGame = new Chess();
     const initialPositionKey = getPositionKey(newGame);
@@ -328,6 +229,9 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
     setLastMove(null);
     setPromotionState(null);
     setFeedback(null);
+    setIsThinking(false);
+    setRetreatedColor(null);
+    setTimeoutLoser(null);
     setPositionCounts({ [initialPositionKey]: 1 });
   };
 
@@ -345,6 +249,9 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
     playerColor,
     handleSquareClick,
     handlePromotion,
+    resign,
+    offerDraw,
     resetGame,
+    setTimeoutLoser,
   };
 }

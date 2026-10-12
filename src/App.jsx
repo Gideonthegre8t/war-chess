@@ -1,22 +1,27 @@
 import {
   useState,
   useCallback,
+  useRef,
+  useEffect,
 } from "react";
 
 import "./App.css";
 
 import ChessGame from "./components/Chess/ChessGame";
+import MoveList from "./components/Chess/MoveList";
 import Warzone from "./components/Warzone/Warzone";
 import LandingPage from "./components/Landing/LandingPage";
-import ChessClock, { TIME_CONTROLS } from "./components/ChessClock/ChessClock";
+import Lobby from "./components/Lobby/Lobby";
+import ChessClock from "./components/ChessClock/ChessClock";
+import { TIME_CONTROLS } from "./components/ChessClock/chessClockConstants";
 
 import {
   useChessGame,
 } from "./hooks/useChessGame";
 
 import {
-  useMultiplayer,
-} from "./hooks/useMultiplayer";
+  useMultiplayerChess,
+} from "./hooks/useMultiplayerChess";
 
 import {
   useChessCpu,
@@ -32,70 +37,47 @@ function App() {
   const [playerColor] = useState("w");
   const [timeControl, setTimeControl] = useState("blitz");
   const [clockRunning, setClockRunning] = useState(false);
-  const [isWhiteTurn, setIsWhiteTurn] = useState(true);
+  const [clockResetKey, setClockResetKey] = useState(0);
+  const [incrementSignal, setIncrementSignal] = useState(0);
+  const lastMoveRef = useRef(null);
+  const [retreatConfirm, setRetreatConfirm] = useState(false);
+
+  // Latest hook instances, read via refs so derived callbacks can stay stable.
+  const cpuGameRef = useRef();
+  const multiplayerRef = useRef();
 
   const localGame = useChessGame();
   const cpuGame = useChessCpu(playerColor, cpuDifficulty);
   const puzzleGame = usePuzzles();
-  const multiplayer = useMultiplayer();
+  const multiplayer = useMultiplayerChess();
+
+  useEffect(() => {
+    cpuGameRef.current = cpuGame;
+  }, [cpuGame]);
+
+  useEffect(() => {
+    multiplayerRef.current = multiplayer;
+  }, [multiplayer]);
 
   const [warzoneLevel, setWarzoneLevel] = useState("medium");
 
-  const handleSelectMode = (mode) => {
-    setCurrentMode(mode);
-    setClockRunning(false);
-    setIsWhiteTurn(true);
-  };
-
-  const handleBackToMenu = () => {
-    setCurrentMode(null);
-    localGame.resetGame();
-    cpuGame.resetGame();
-    puzzleGame.resetPuzzle();
-    setClockRunning(false);
-    setIsWhiteTurn(true);
-  };
-
-  const handleMoveMade = useCallback(() => {
-    setIsWhiteTurn(prev => !prev);
-    setClockRunning(true);
-  }, []);
-
-  const handleFlagFall = useCallback((color) => {
-    setClockRunning(false);
-    if (color === 'w') {
-      alert('White ran out of time! Black wins!');
-    } else {
-      alert('Black ran out of time! White wins!');
-    }
-  }, []);
-
-  // Render based on current mode
-  if (!currentMode) {
-    return (
-      <div className="app">
-        <LandingPage onSelectMode={handleSelectMode} />
-      </div>
-    );
-  }
-
-  // Get game state based on mode
+  // Unify each mode's hook behind the same interface.
   const getGameState = () => {
     switch (currentMode) {
       case 'multiplayer':
         return {
-          game: localGame.game,
-          board: localGame.board,
-          selectedSquare: localGame.selectedSquare,
-          legalMoveSquares: localGame.legalMoveSquares,
-          lastMove: localGame.lastMove,
-          promotionState: localGame.promotionState,
-          checkedKingSquare: localGame.checkedKingSquare,
-          feedback: localGame.feedback,
-          gameResult: localGame.gameResult,
-          handleSquareClick: localGame.handleSquareClick,
-          handlePromotion: localGame.handlePromotion,
-          resetGame: localGame.resetGame,
+          game: multiplayer.game,
+          board: multiplayer.board,
+          selectedSquare: multiplayer.selectedSquare,
+          legalMoveSquares: multiplayer.legalMoveSquares,
+          lastMove: multiplayer.lastMove,
+          promotionState: multiplayer.promotionState,
+          checkedKingSquare: multiplayer.checkedKingSquare,
+          feedback: multiplayer.feedback,
+          gameResult: multiplayer.gameResult,
+          handleSquareClick: multiplayer.handleSquareClick,
+          handlePromotion: multiplayer.handlePromotion,
+          resetGame: multiplayer.resetGame,
         };
       case 'cpu':
         return {
@@ -133,8 +115,122 @@ function App() {
   };
 
   const gameState = getGameState();
-  const showClock = currentMode === 'multiplayer' || (currentMode === 'cpu' && true); // Always show for now, can add toggle
 
+  // The active clock player is always whoever is to move on the board.
+  const activePlayer = gameState.game.turn() === 'w' ? 'w' : 'b';
+
+  // Start the clock and credit the mover's increment only on a real move.
+  useEffect(() => {
+    const lm = gameState.lastMove;
+    if (lm === lastMoveRef.current) return;
+    lastMoveRef.current = lm;
+    if (lm) {
+      setClockRunning(true);
+      setIncrementSignal((s) => s + 1);
+    } else {
+      setIncrementSignal(0);
+    }
+  }, [gameState.lastMove]);
+
+  // Stop the clock whenever the game is over.
+  useEffect(() => {
+    if (gameState.gameResult?.over) {
+      setClockRunning(false);
+    }
+  }, [gameState.gameResult?.over]);
+
+  const handleSelectMode = (mode) => {
+    setCurrentMode(mode);
+    setClockRunning(false);
+    lastMoveRef.current = null;
+    setIncrementSignal(0);
+  };
+
+  const handleBackToMenu = () => {
+    setCurrentMode(null);
+    localGame.resetGame();
+    cpuGame.resetGame();
+    puzzleGame.resetPuzzle();
+    multiplayer.resetGame();
+    setClockRunning(false);
+    setRetreatConfirm(false);
+    lastMoveRef.current = null;
+    setIncrementSignal(0);
+    setClockResetKey(k => k + 1);
+  };
+
+  const handleNewGame = () => {
+    if (currentMode === 'multiplayer') {
+      multiplayer.requestNewGame();
+    } else {
+      gameState.resetGame();
+    }
+    setClockRunning(false);
+    setRetreatConfirm(false);
+    lastMoveRef.current = null;
+    setIncrementSignal(0);
+    setClockResetKey(k => k + 1);
+  };
+
+  const handleRetreat = () => {
+    if (currentMode === 'multiplayer') {
+      multiplayer.resign();
+    } else if (currentMode === 'cpu') {
+      cpuGame.resign();
+    }
+    setClockRunning(false);
+    setRetreatConfirm(false);
+  };
+
+  const handleFlagFall = useCallback((color) => {
+    setClockRunning(false);
+    if (currentMode === 'cpu') {
+      cpuGameRef.current?.setTimeoutLoser(color);
+    } else if (currentMode === 'multiplayer') {
+      multiplayerRef.current?.handleFlagFall(color);
+    }
+  }, [currentMode]);
+
+  if (!currentMode) {
+    return (
+      <div className="app">
+        <LandingPage onSelectMode={handleSelectMode} />
+      </div>
+    );
+  }
+
+  // Multiplayer: show lobby if game hasn't started
+  if (currentMode === 'multiplayer' && !multiplayer.gameStarted) {
+    return (
+      <div className="app">
+        <header className="topbar">
+          <div>
+            <div className="brand">KINGDOMS AT WAR</div>
+            <div className="subtitle">Battle friends online</div>
+          </div>
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="back-button"
+              onClick={handleBackToMenu}
+            >
+              ← Menu
+            </button>
+          </div>
+        </header>
+
+        <main className="game-layout">
+          <Lobby
+            onCreateRoom={multiplayer.createRoom}
+            onJoinRoom={multiplayer.joinRoom}
+            isConnected={multiplayer.isConnected}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Get game state based on mode
   return (
     <div className="app">
       {/* TOP BAR */}
@@ -213,6 +309,40 @@ function App() {
             </div>
           )}
 
+          {(currentMode === 'multiplayer' || currentMode === 'cpu') && (
+            <button
+              type="button"
+              className="draw-offer-button"
+              disabled={Boolean(currentMode === 'multiplayer' && multiplayer.drawOffer)}
+              onClick={() => {
+                if (currentMode === 'multiplayer') {
+                  multiplayer.offerDraw();
+                } else {
+                  cpuGame.offerDraw();
+                }
+              }}
+            >
+              🤝 Offer Draw
+            </button>
+          )}
+
+          {(currentMode === 'multiplayer' || currentMode === 'cpu') && (
+            <button
+              type="button"
+              className={`retreat-button${retreatConfirm ? ' retreat-confirm' : ''}`}
+              onClick={() => {
+                if (retreatConfirm) {
+                  handleRetreat();
+                } else {
+                  setRetreatConfirm(true);
+                  setTimeout(() => setRetreatConfirm(false), 4000);
+                }
+              }}
+            >
+              {retreatConfirm ? 'Confirm Retreat?' : '🏳 Retreat'}
+            </button>
+          )}
+
           <button
             type="button"
             className="back-button"
@@ -224,11 +354,7 @@ function App() {
           <button
             type="button"
             className="reset-button"
-            onClick={() => {
-              gameState.resetGame();
-              setClockRunning(false);
-              setIsWhiteTurn(true);
-            }}
+            onClick={handleNewGame}
           >
             New Game
           </button>
@@ -239,6 +365,50 @@ function App() {
       {gameState.feedback && (
         <div className={`game-feedback feedback-${gameState.feedback.type}`}>
           {gameState.feedback.message}
+        </div>
+      )}
+
+      {/* PENDING DRAW */}
+      {currentMode === 'multiplayer' && multiplayer.drawOffer && (
+        <div className="draw-banner">
+          {multiplayer.drawOffer.direction === 'received' ? (
+            <>
+              <span className="draw-banner-text">
+                🤝 {multiplayer.drawOffer.color === 'w' ? 'White' : 'Black'} offers a draw
+              </span>
+              <div className="draw-banner-actions">
+                <button
+                  type="button"
+                  className="draw-action-button draw-accept"
+                  onClick={multiplayer.acceptDraw}
+                >
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  className="draw-action-button"
+                  onClick={multiplayer.declineDraw}
+                >
+                  Decline
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="draw-banner-text">
+                🤝 Draw offered — awaiting response…
+              </span>
+              <div className="draw-banner-actions">
+                <button
+                  type="button"
+                  className="draw-action-button"
+                  onClick={multiplayer.cancelDraw}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -267,25 +437,15 @@ function App() {
       {/* MAIN */}
       <main className="game-layout">
         <div className="game-main-content">
-          {/* Chess Clock for Multiplayer */}
-          {currentMode === 'multiplayer' && (
+          {/* Chess Clock */}
+          {(currentMode === 'multiplayer' || currentMode === 'cpu') && (
             <ChessClock
-              isActive={isWhiteTurn}
-              onTimeUp={handleFlagFall}
+              activePlayer={activePlayer}
               timeControl={timeControl}
               isRunning={clockRunning}
               onFlagFall={handleFlagFall}
-            />
-          )}
-
-          {/* Chess Clock for CPU (optional) */}
-          {currentMode === 'cpu' && (
-            <ChessClock
-              isActive={isWhiteTurn}
-              onTimeUp={handleFlagFall}
-              timeControl={timeControl}
-              isRunning={clockRunning}
-              onFlagFall={handleFlagFall}
+              resetKey={clockResetKey + (currentMode === 'multiplayer' ? multiplayer.resetSignal : 0)}
+              incrementTick={incrementSignal}
             />
           )}
 
@@ -297,21 +457,27 @@ function App() {
             lastMove={gameState.lastMove}
             checkedKingSquare={gameState.checkedKingSquare}
             promotionState={gameState.promotionState}
-            onSquareClick={(square) => {
-              gameState.handleSquareClick(square);
-              if (currentMode !== 'puzzles') {
-                handleMoveMade();
-              }
-            }}
+            onSquareClick={gameState.handleSquareClick}
             onPromotion={gameState.handlePromotion}
             gameResult={gameState.gameResult}
-            resetGame={gameState.resetGame}
+            resetGame={currentMode === 'multiplayer'
+              ? multiplayer.requestNewGame
+              : gameState.resetGame}
+            warzoneLevel={warzoneLevel}
+          />
+
+          <MoveList
+            game={gameState.game}
+            notes={currentMode === 'multiplayer' ? multiplayer.battleLog : []}
           />
         </div>
 
         <Warzone
           warzoneLevel={warzoneLevel}
           setWarzoneLevel={setWarzoneLevel}
+          lastMove={gameState.lastMove}
+          gameResult={gameState.gameResult}
+          game={gameState.game}
         />
       </main>
     </div>

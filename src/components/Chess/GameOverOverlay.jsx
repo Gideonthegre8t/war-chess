@@ -15,19 +15,40 @@ export default function GameOverOverlay({
   const isCheckmate =
     type === "checkmate";
 
+  const isResignation =
+    type === "resignation";
+
+  const isTimeout =
+    type === "timeout";
+
+  const isDrawAgreed =
+    type === "draw-agreed";
+
+  const hasWinner =
+    isCheckmate || isResignation || isTimeout;
+
   const winnerKingdom =
-    isCheckmate
+    hasWinner
       ? winner === "w"
         ? "WHITE KINGDOM"
         : "BLACK KINGDOM"
       : null;
+
+  const resultLabel =
+    isResignation
+      ? "CONCEDED"
+      : isCheckmate
+        ? "VICTORY"
+        : isTimeout
+          ? "LOST ON TIME"
+          : "DRAW";
 
   return (
     <div className="game-over-overlay">
       <div className="game-over-card">
 
         <div className="game-over-icon">
-          {isCheckmate ? "♛" : "🤝"}
+          {isCheckmate ? "♛" : (isResignation ? "🏳" : (isTimeout ? "⏰" : "🤝"))}
         </div>
 
         <div className="game-over-label">
@@ -45,12 +66,32 @@ export default function GameOverOverlay({
         )}
 
         <div className="game-over-result">
-          {isCheckmate ? "VICTORY" : "DRAW"}
+          {resultLabel}
         </div>
 
         {isCheckmate && (
           <p className="game-over-description">
             The king has been checkmated.
+          </p>
+        )}
+
+        {isResignation && (
+          <p className="game-over-description">
+            The losing kingdom has retreated from
+            the battlefield and conceded the war.
+          </p>
+        )}
+
+        {isTimeout && (
+          <p className="game-over-description">
+            The battlefield clock has run dry.
+          </p>
+        )}
+
+        {isDrawAgreed && (
+          <p className="game-over-description">
+            Both commanders agreed to end this
+            war in peace.
           </p>
         )}
 

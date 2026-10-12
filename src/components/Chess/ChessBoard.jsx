@@ -1,6 +1,7 @@
 import ChessSquare from "./ChessSquare";
 import PromotionPicker from "./PromotionPicker";
 import GameOverOverlay from "./GameOverOverlay";
+import MoveGhost from "./MoveGhost";
 
 import {
   files,
@@ -18,6 +19,8 @@ function ChessBoard({
   onPromotion,
   gameResult,
   resetGame,
+  game,
+  warzoneLevel,
 }) {
   const isLastMoveSquare = (square) => {
     if (!lastMove) return false;
@@ -89,6 +92,21 @@ function ChessBoard({
           <GameOverOverlay
             gameResult={gameResult}
             onReset={resetGame}
+          />
+        )}
+
+        {/* UNIT MARCH (Phase 3 war engine) */}
+
+        {lastMove && game && (
+          <MoveGhost
+            key={`${lastMove.from}${lastMove.to}${game.history().length}`}
+            from={lastMove.from}
+            to={lastMove.to}
+            pieceType={lastMove.piece}
+            captured={lastMove.captured}
+            promotion={lastMove.promotion}
+            moverColor={game.turn() === 'w' ? 'b' : 'w'}
+            warzoneLevel={warzoneLevel}
           />
         )}
 

@@ -1,60 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
+import { TIME_CONTROLS } from './chessClockConstants';
 import './ChessClock.css';
-
-const TIME_CONTROLS = [
-  { id: 'bullet', label: '1|0', white: 60, black: 60, increment: 0 },
-  { id: 'bullet-inc', label: '1|1', white: 60, black: 60, increment: 1 },
-  { id: 'blitz', label: '3|0', white: 180, black: 180, increment: 0 },
-  { id: 'blitz-inc', label: '3|2', white: 180, black: 180, increment: 2 },
-  { id: 'rapid', label: '5|0', white: 300, black: 300, increment: 0 },
-  { id: 'rapid-inc', label: '5|3', white: 300, black: 300, increment: 3 },
-  { id: 'classical', label: '10|0', white: 600, black: 600, increment: 0 },
-  { id: 'classical-inc', label: '10|5', white: 600, black: 600, increment: 5 },
-];
 
 function formatTime(seconds) {
   if (seconds <= 0) return '0:00';
-  
+
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  
+
   if (mins >= 60) {
     const hours = Math.floor(mins / 60);
     const remainMins = mins % 60;
     return `${hours}:${remainMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-  
+
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function ChessClock({
-  isActive,
-  onTimeUp,
-  playerColor = 'w',
+  activePlayer = 'w',
   timeControl = 'blitz',
   isRunning = true,
-  onFlagFall
+  onFlagFall,
+  resetKey = 0,
+  incrementTick = 0,
 }) {
   const [whiteTime, setWhiteTime] = useState(() => {
     const tc = TIME_CONTROLS.find(t => t.id === timeControl);
     return tc ? tc.white : 180;
   });
-  
+
   const [blackTime, setBlackTime] = useState(() => {
     const tc = TIME_CONTROLS.find(t => t.id === timeControl);
     return tc ? tc.black : 180;
   });
-  
-  const [activePlayer, setActivePlayer] = useState('w');
-  const intervalRef = useRef(null);
-  const timeControlData = TIME_CONTROLS.find(t => t.id === timeControl);
-  const increment = timeControlData ? timeControlData.increment : 0;
 
-  // Timer logic
+  const intervalRef = useRef(null);
+  const prevIncrementTickRef = useRef(0);
+
+  // Only the active player's clock ticks down.
   useEffect(() => {
     if (!isRunning) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
       return;
     }
@@ -64,6 +53,7 @@ function ChessClock({
         setWhiteTime(prev => {
           if (prev <= 1) {
             clearInterval(intervalRef.current);
+            intervalRef.current = null;
             if (onFlagFall) onFlagFall('w');
             return 0;
           }
@@ -73,6 +63,7 @@ function ChessClock({
         setBlackTime(prev => {
           if (prev <= 1) {
             clearInterval(intervalRef.current);
+            intervalRef.current = null;
             if (onFlagFall) onFlagFall('b');
             return 0;
           }
@@ -84,37 +75,35 @@ function ChessClock({
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [activePlayer, isRunning, onFlagFall]);
 
-  // Switch turns
+  // Rich reward: each completed move credits the mover with the increment.
   useEffect(() => {
-    if (isActive !== undefined) {
-      setActivePlayer(isActive ? 'w' : 'b');
-    }
-  }, [isActive]);
+    if (incrementTick === prevIncrementTickRef.current) return;
+    prevIncrementTickRef.current = incrementTick;
 
-  // Add increment after move
-  const addIncrement = (color) => {
-    if (color === 'w') {
-      setWhiteTime(prev => prev + increment);
+    if (incrementTick === 0) return;
+
+    const tc = TIME_CONTROLS.find(t => t.id === timeControl);
+    if (!tc || tc.increment <= 0) return;
+
+    if (activePlayer === 'w') {
+      setBlackTime(prev => prev + tc.increment);
     } else {
-      setBlackTime(prev => prev + increment);
+      setWhiteTime(prev => prev + tc.increment);
     }
-  };
+  }, [incrementTick, activePlayer, timeControl]);
 
-  // Reset clock
-  const resetClock = () => {
+  // Reset clock when a new game starts (or time control changes).
+  useEffect(() => {
     const tc = TIME_CONTROLS.find(t => t.id === timeControl);
     setWhiteTime(tc ? tc.white : 180);
     setBlackTime(tc ? tc.black : 180);
-    setActivePlayer('w');
-  };
-
-  // Expose reset and addIncrement functions
-  ChessClock.resetClock = resetClock;
-  ChessClock.addIncrement = addIncrement;
+    prevIncrementTickRef.current = 0;
+  }, [resetKey, timeControl]);
 
   const whiteTimeWarning = whiteTime <= 30;
   const blackTimeWarning = blackTime <= 30;
@@ -155,5 +144,4 @@ function ChessClock({
   );
 }
 
-export { TIME_CONTROLS };
 export default ChessClock;

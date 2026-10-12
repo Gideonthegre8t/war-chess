@@ -79,6 +79,7 @@ export function usePuzzles() {
           to: moveResult.to,
           captured: Boolean(moveResult.captured),
           piece: moveResult.piece,
+          promotion: moveResult.promotion || null,
         });
 
         if (isCorrectMove(moveResult)) {
@@ -148,6 +149,7 @@ export function usePuzzles() {
             to: moveResult.to,
             captured: Boolean(moveResult.captured),
             piece: moveResult.piece,
+            promotion: moveResult.promotion || null,
           });
           setGame(nextGame);
           setMoveIndex(moveIndex + 1);
