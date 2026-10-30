@@ -21,6 +21,7 @@ function ChessBoard({
   resetGame,
   game,
   warzoneLevel,
+  orientation = 'w',
 }) {
   const isLastMoveSquare = (square) => {
     if (!lastMove) return false;
@@ -37,6 +38,9 @@ function ChessBoard({
     return lastMove.to === square;
   };
 
+  const rowIndices = orientation === 'b' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const colIndices = orientation === 'b' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+
   return (
     <div className="board-wrapper">
 
@@ -44,11 +48,13 @@ function ChessBoard({
 
         {/* CHESS SQUARES */}
 
-        {board.map((row, rowIndex) =>
-          row.map((piece, columnIndex) => {
+        {rowIndices.map((rowIndex) =>
+          colIndices.map((columnIndex) => {
             const squareName =
               files[columnIndex] +
               ranks[rowIndex];
+
+            const piece = board[rowIndex][columnIndex];
 
             const isDark =
               (rowIndex + columnIndex) % 2 === 1;
@@ -107,6 +113,7 @@ function ChessBoard({
             promotion={lastMove.promotion}
             moverColor={game.turn() === 'w' ? 'b' : 'w'}
             warzoneLevel={warzoneLevel}
+            orientation={orientation}
           />
         )}
 

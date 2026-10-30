@@ -24,6 +24,7 @@ export function useMultiplayerChess() {
   const [resetSignal, setResetSignal] = useState(0);
   const [battleLog, setBattleLog] = useState([]);
   const battleLogId = useRef(0);
+  const [clockSync, setClockSync] = useState(null);
   const [positionCounts, setPositionCounts] = useState(() => {
     const initialGame = new Chess();
     const initialKey = getPositionKey(initialGame);
@@ -45,7 +46,6 @@ export function useMultiplayerChess() {
     offerDraw: sendOfferDraw,
     cancelDraw: sendCancelDraw,
     respondDraw: sendRespondDraw,
-    sendFlagFall,
   } = useMultiplayer();
 
   const board = useMemo(() => game.board(), [game]);
@@ -211,13 +211,6 @@ export function useMultiplayerChess() {
     );
   }, [showFeedback]);
 
-  const handleFlagFall = useCallback((color) => {
-    declareTimeoutLoser(color);
-    setDrawOffer(null);
-    logEvent(`⏰ ${color === 'w' ? 'White' : 'Black'} ran out of time`, 'timeout');
-    sendFlagFall(color);
-  }, [declareTimeoutLoser, setDrawOffer, logEvent, sendFlagFall]);
-
   const offerDraw = useCallback(() => {
     if (gameResult.over || !gameStarted || drawOffer) return;
     setDrawOffer({ direction: 'sent' });
@@ -264,12 +257,13 @@ export function useMultiplayerChess() {
     setAgreedDraw(false);
     setPositionCounts({ [initialPositionKey]: 1 });
     setBattleLog([]);
+    setClockSync(null);
     setResetSignal((s) => s + 1);
   }, []);
 
   // Rejoin / reconnect: rebuild the board from the server's stored PGN and
   // restore any non-move terminal state (resignation / timeout / draw).
-  const handleGameResync = useCallback(({ pgn, terminal }) => {
+  const handleGameResync = useCallback(({ pgn, terminal, clock }) => {
     try {
       if (pgn) {
         const { nextGame, counts, lastMove } = parsePgnState(pgn);
@@ -277,6 +271,8 @@ export function useMultiplayerChess() {
         setPositionCounts(counts);
         setLastMove(lastMove);
       }
+
+      if (clock) setClockSync(clock);
 
       setSelectedSquare(null);
       setPromotionState(null);
@@ -331,6 +327,12 @@ export function useMultiplayerChess() {
           setPositionCounts(counts);
           setSelectedSquare(null);
           setLastMove(lastMove);
+
+          if (drawOffer) {
+            setDrawOffer(null);
+            logEvent('🤝 Draw offer withdrawn by opponent move — battle continues', 'draw');
+            showFeedback('🤝 Draw offer withdrawn — battle continues', 'draw');
+          }
 
           const nextResult = getGameResult(nextGame, counts);
           if (nextResult.over) {
@@ -414,6 +416,16 @@ export function useMultiplayerChess() {
       showFeedback('🤝 DRAW AGREED', 'draw');
     };
 
+    const handleClockSync = (sync) => {
+      setClockSync(sync);
+    };
+
+    const handleGameStart = ({ clock }) => {
+      if (clock) setClockSync(clock);
+    };
+
+    socket.on('game-start', handleGameStart);
+    socket.on('clock-sync', handleClockSync);
     socket.on('opponent-move', handleOpponentMove);
     socket.on('opponent-new-game', handleOpponentNewGame);
     socket.on('opponent-resigned', handleOpponentResigned);
@@ -425,6 +437,8 @@ export function useMultiplayerChess() {
     socket.on('draw-declined', handleDrawDeclined);
     socket.on('draw-accepted', handleDrawAccepted);
     return () => {
+      socket.off('game-start', handleGameStart);
+      socket.off('clock-sync', handleClockSync);
       socket.off('opponent-move', handleOpponentMove);
       socket.off('opponent-new-game', handleOpponentNewGame);
       socket.off('opponent-resigned', handleOpponentResigned);
@@ -561,9 +575,9 @@ export function useMultiplayerChess() {
     sendResign();
   }, [gameStarted, gameResult.over, playerColor, sendResign, logEvent]);
 
-  const requestNewGame = useCallback(() => {
+  const requestNewGame = useCallback((timeControlId) => {
     resetGame();
-    sendNewGame();
+    sendNewGame(timeControlId);
   }, [resetGame, sendNewGame]);
 
   return {
@@ -592,12 +606,12 @@ export function useMultiplayerChess() {
     resetSignal,
     setPromotionState,
     setFeedback,
-    handleFlagFall,
     drawOffer,
     offerDraw,
     cancelDraw,
     acceptDraw,
     declineDraw,
     battleLog,
+    clockSync,
   };
 }

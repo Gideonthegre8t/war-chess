@@ -1073,7 +1073,7 @@ button {
   z-index: 2;
   opacity: 0.3;
   filter: blur(1px);
-  animation: marchMove var(--dur) cubic-bezier(0.33, 1, 0.68, 1) 60ms forwards;
+  animation: marchMove var(--dur) cubic-bezier(0.33, 1, 0.68, 1) 30ms forwards;
 }
 
 .march-white {
@@ -1125,7 +1125,7 @@ button {
     transparent 70%
   );
 
-  animation: captureBurst 0.55s ease-out forwards;
+  animation: captureBurst 0.35s ease-out forwards;
 }
 
 @keyframes captureBurst {
@@ -1158,7 +1158,7 @@ button {
     transparent 75%
   );
 
-  animation: promotionBurst 1.1s ease-out forwards;
+  animation: promotionBurst 0.85s ease-out forwards;
 }
 
 .march-token.march-promotion {
@@ -2608,21 +2608,27 @@ button {
 }
 
 /* =====================================================
-   TIME CONTROL SELECTOR
+   SELECTORS (SIDE, DIFFICULTY, TIME CONTROL)
 ===================================================== */
 
+.side-selector,
+.difficulty-selector,
 .time-control-selector {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.side-selector label,
+.difficulty-selector label,
 .time-control-selector label {
   color: #8b949e;
   font-size: 12px;
   font-weight: 700;
 }
 
+.side-selector select,
+.difficulty-selector select,
 .time-control-selector select {
   padding: 6px 10px;
   background: #21262d;
@@ -2634,6 +2640,8 @@ button {
   cursor: pointer;
 }
 
+.side-selector select:focus,
+.difficulty-selector select:focus,
 .time-control-selector select:focus {
   outline: none;
   border-color: #58a6ff;

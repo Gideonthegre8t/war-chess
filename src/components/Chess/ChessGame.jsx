@@ -1,4 +1,4 @@
-import PlayerInfo from "./PlayerInfo";
+import ChessClock from "../ChessClock/ChessClock";
 import ChessBoard from "./ChessBoard";
 import ChessStatus from "./ChessStatus";
 
@@ -15,7 +15,26 @@ function ChessGame({
   gameResult,
   resetGame,
   warzoneLevel,
+  clock,
 }) {
+  const boardElement = (
+    <ChessBoard
+      board={board}
+      selectedSquare={selectedSquare}
+      legalMoveSquares={legalMoveSquares}
+      lastMove={lastMove}
+      checkedKingSquare={checkedKingSquare}
+      promotionState={promotionState}
+      onSquareClick={onSquareClick}
+      onPromotion={onPromotion}
+      gameResult={gameResult}
+      resetGame={resetGame}
+      game={game}
+      warzoneLevel={warzoneLevel}
+      orientation={clock?.orientation || 'w'}
+    />
+  );
+
   return (
     <section className="chess-panel">
 
@@ -43,30 +62,16 @@ function ChessGame({
 
 
       {/* =========================
-          PLAYERS
+          BOARD (+ CLOCKS)
       ========================= */}
 
-      <PlayerInfo />
-
-
-      {/* =========================
-          CHESS BOARD
-      ========================= */}
-
-      <ChessBoard
-        board={board}
-        selectedSquare={selectedSquare}
-        legalMoveSquares={legalMoveSquares}
-        lastMove={lastMove}
-        checkedKingSquare={checkedKingSquare}
-        promotionState={promotionState}
-        onSquareClick={onSquareClick}
-        onPromotion={onPromotion}
-        gameResult={gameResult}
-        resetGame={resetGame}
-        game={game}
-        warzoneLevel={warzoneLevel}
-      />
+      {clock ? (
+        <ChessClock {...clock}>
+          {boardElement}
+        </ChessClock>
+      ) : (
+        boardElement
+      )}
 
 
       {/* =========================

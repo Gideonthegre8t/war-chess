@@ -34,6 +34,16 @@ function LandingPage({ onSelectMode }) {
           </button>
 
           <button
+            className="mode-card mode-pass-play"
+            onClick={() => onSelectMode('local')}
+          >
+            <div className="mode-icon">👥</div>
+            <h2 className="mode-title">PASS & PLAY</h2>
+            <p className="mode-description">Two commanders on one screen</p>
+            <div className="mode-badge">LOCAL</div>
+          </button>
+
+          <button
             className="mode-card mode-puzzles"
             onClick={() => onSelectMode('puzzles')}
           >
@@ -46,7 +56,7 @@ function LandingPage({ onSelectMode }) {
 
         {/* Footer */}
         <div className="landing-footer">
-          <p>Built with chess.js • Phase 2: Multiplayer</p>
+          <p>Built with chess.js • Phase 3: War Engine & Integrity</p>
         </div>
       </div>
     </div>

@@ -18,7 +18,9 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# Server snapshots
+rooms-snapshot.json
+server/rooms-snapshot.json
 .vscode/*
 !.vscode/extensions.json
 .idea

@@ -6,33 +6,43 @@ const GLYPHS = {
 };
 
 const UNITS = {
-  p: { label: 'Infantry', dur: 720 },
-  n: { label: 'Cavalry', dur: 340 },
-  b: { label: 'Archers', dur: 520 },
-  r: { label: 'Siege engines', dur: 640 },
-  q: { label: 'Royal Guard', dur: 430 },
-  k: { label: 'The King', dur: 480 },
+  p: { label: 'Infantry', dur: 320 },
+  n: { label: 'Cavalry', dur: 220 },
+  b: { label: 'Archers', dur: 260 },
+  r: { label: 'Siege engines', dur: 300 },
+  q: { label: 'Royal Guard', dur: 240 },
+  k: { label: 'The King', dur: 250 },
 };
 
 const SPEED_FACTOR = {
   off: 0,
-  low: 1.7,
-  medium: 1,
-  high: 0.55,
+  low: 1.5,
+  medium: 0.6,
+  high: 0.4,
 };
 
-const colOf = (square) => square.charCodeAt(0) - 97;
-const rowOf = (square) => 8 - Number(square[1]);
+const colOf = (square, orientation = 'w') => {
+  const c = square.charCodeAt(0) - 97;
+  return orientation === 'b' ? 7 - c : c;
+};
+const rowOf = (square, orientation = 'w') => {
+  const r = 8 - Number(square[1]);
+  return orientation === 'b' ? 7 - r : r;
+};
 
-function MoveGhost({ from, to, pieceType, captured, promotion = false, moverColor = 'w', warzoneLevel = 'medium' }) {
+function MoveGhost({ from, to, pieceType, captured, promotion = false, moverColor = 'w', warzoneLevel = 'medium', orientation = 'w' }) {
   const [gone, setGone] = useState(false);
 
   if (gone || warzoneLevel === 'off') return null;
 
   const unit = UNITS[pieceType] || UNITS.p;
   const glyph = (GLYPHS[moverColor] || GLYPHS.w)[pieceType] || '♟';
-  const dCol = colOf(to) - colOf(from);
-  const dRow = rowOf(to) - rowOf(from);
+  const fromCol = colOf(from, orientation);
+  const fromRow = rowOf(from, orientation);
+  const toCol = colOf(to, orientation);
+  const toRow = rowOf(to, orientation);
+  const dCol = toCol - fromCol;
+  const dRow = toRow - fromRow;
 
   const speed = SPEED_FACTOR[warzoneLevel] || 1;
   const dur = Math.round(unit.dur * speed);
@@ -45,16 +55,16 @@ function MoveGhost({ from, to, pieceType, captured, promotion = false, moverColo
   ].join(' ');
 
   const style = {
-    left: `${colOf(from) * 12.5}%`,
-    top: `${rowOf(from) * 12.5}%`,
+    left: `${fromCol * 12.5}%`,
+    top: `${fromRow * 12.5}%`,
     '--dx': `${dCol * 12.5}%`,
     '--dy': `${dRow * 12.5}%`,
     '--dur': `${dur}ms`,
   };
 
   const burstStyle = {
-    left: `${colOf(to) * 12.5}%`,
-    top: `${rowOf(to) * 12.5}%`,
+    left: `${toCol * 12.5}%`,
+    top: `${toRow * 12.5}%`,
   };
 
   return (

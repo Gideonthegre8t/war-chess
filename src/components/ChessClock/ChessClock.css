@@ -1,98 +1,100 @@
 /* =====================================================
-   CHESS CLOCK
+   CHESS CLOCK — board-attached bars (chess.com style)
+   Black's bar sits directly above the board, White's below,
+   so each player sees their own clock right next to the board.
 ===================================================== */
 
-.chess-clock {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.clock-display {
+.clock-board-stack {
+  width: min(100%, 560px);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background: #0d1117;
-  border: 1px solid #30363d;
-  border-radius: 10px;
-  overflow: hidden;
 }
 
-/* =====================================================
-   CLOCK PLAYER
-===================================================== */
-
-.clock-player {
+.clock-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: #161b22;
-  transition: all 0.3s ease;
+
+  gap: 12px;
+
+  padding: 8px 14px;
+
+  background: #0d1117;
+
+  border: 1px solid #30363d;
+  border-radius: 8px;
+
+  transition: background 0.25s ease, box-shadow 0.25s ease;
 }
 
-.clock-white {
-  border-bottom: 1px solid #30363d;
+.clock-bar-black {
+  margin-bottom: 8px;
 }
 
-.clock-black {
-  border-top: none;
+.clock-bar-white {
+  margin-top: 8px;
 }
 
 /* =====================================================
-   CLOCK ACTIVE STATE
+   ACTIVE SIDE
 ===================================================== */
 
-.clock-active {
-  background: #21262d;
-  box-shadow: inset 0 0 0 2px rgba(88, 166, 255, 0.5);
+.clock-bar-active {
+  background: #1b2430;
+  box-shadow: inset 0 0 0 2px rgba(88, 166, 255, 0.55);
 }
 
-.clock-active .clock-time {
+.clock-bar-active .clock-time {
   color: #58a6ff;
 }
 
 /* =====================================================
-   CLOCK LABEL
+   PLAYER NAME
 ===================================================== */
 
-.clock-label {
+.clock-bar-player {
   display: flex;
   align-items: center;
   gap: 8px;
+
   font-size: 12px;
   font-weight: 700;
+
   color: #8b949e;
   letter-spacing: 0.05em;
+
+  white-space: nowrap;
 }
 
 .clock-piece {
   font-size: 18px;
+  line-height: 1;
 }
 
-.clock-white .clock-piece {
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+.clock-bar-white .clock-piece {
+  color: #f0f3f6;
 }
 
-.clock-black .clock-piece {
-  color: #1a1a1a;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+.clock-bar-black .clock-piece {
+  color: #9aa4af;
 }
 
 /* =====================================================
-   CLOCK TIME
+   TIME
 ===================================================== */
 
 .clock-time {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
   color: #f0f3f6;
   letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* =====================================================
-   CLOCK WARNING STATES
+   WARNING STATES
 ===================================================== */
 
 .clock-warning {
@@ -111,35 +113,14 @@
 }
 
 @keyframes clockCritical {
-  0%, 100% { 
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.8;
     transform: scale(1.02);
   }
-}
-
-/* =====================================================
-   CLOCK DIVIDER
-===================================================== */
-
-.clock-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  background: #0d1117;
-  border-top: 1px solid #30363d;
-  border-bottom: 1px solid #30363d;
-}
-
-.clock-vs {
-  font-size: 10px;
-  font-weight: 800;
-  color: #484f58;
-  letter-spacing: 0.1em;
 }
 
 /* =====================================================
@@ -151,11 +132,11 @@
     font-size: 20px;
   }
 
-  .clock-player {
-    padding: 10px 12px;
+  .clock-bar {
+    padding: 7px 11px;
   }
 
-  .clock-label {
+  .clock-bar-player {
     font-size: 11px;
   }
 }

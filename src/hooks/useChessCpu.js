@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { useChessAI } from './useChessAI';
 import { playSound } from '../utils/sound';
@@ -20,15 +20,23 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
   const [retreatedColor, setRetreatedColor] = useState(null);
   const [timeoutLoser, setTimeoutLoser] = useState(null);
 
+  // Tracks whether a CPU think cycle is in progress without triggering re-runs.
+  // Must be declared before the CPU useEffect that reads it.
+  const isThinkingRef = useRef(false);
+
   const { getBestMove } = useChessAI();
 
-  const board = game.board();
+  const board = useMemo(() => game.board(), [game]);
 
-  const legalMoves = selectedSquare
-    ? game.moves({ square: selectedSquare, verbose: true })
-    : [];
+  const legalMoves = useMemo(
+    () => (selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : []),
+    [game, selectedSquare]
+  );
 
-  const legalMoveSquares = legalMoves.map((move) => move.to);
+  const legalMoveSquares = useMemo(
+    () => legalMoves.map((move) => move.to),
+    [legalMoves]
+  );
 
   const showFeedback = (message, type) => {
     setFeedback({ message, type });
@@ -52,23 +60,23 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
 
   const gameResult = retreatedColor
     ? {
-        over: true,
-        type: 'resignation',
-        winner: retreatedColor === 'w' ? 'b' : 'w',
-        message: retreatedColor === 'w' ? '🏳️ WHITE RETREATS' : '🏳️ BLACK RETREATS',
-        retreatColor: retreatedColor,
-      }
+      over: true,
+      type: 'resignation',
+      winner: retreatedColor === 'w' ? 'b' : 'w',
+      message: retreatedColor === 'w' ? '🏳️ WHITE RETREATS' : '🏳️ BLACK RETREATS',
+      retreatColor: retreatedColor,
+    }
     : timeoutLoser
       ? {
-          over: true,
-          type: 'timeout',
-          winner: timeoutLoser === 'w' ? 'b' : 'w',
-          message: timeoutLoser === 'w' ? '⏰ WHITE RUNS OUT OF TIME' : '⏰ BLACK RUNS OUT OF TIME',
-          timeoutLoser,
-        }
+        over: true,
+        type: 'timeout',
+        winner: timeoutLoser === 'w' ? 'b' : 'w',
+        message: timeoutLoser === 'w' ? '⏰ WHITE RUNS OUT OF TIME' : '⏰ BLACK RUNS OUT OF TIME',
+        timeoutLoser,
+      }
       : getGameResult(game, positionCounts);
 
-  const updatePositionCounts = (nextGame) => {
+  const updatePositionCounts = useCallback((nextGame) => {
     const nextPositionKey = getPositionKey(nextGame);
     const nextCount = (positionCounts[nextPositionKey] || 0) + 1;
     const nextPositionCounts = {
@@ -76,7 +84,7 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
       [nextPositionKey]: nextCount,
     };
     return { nextPositionCounts, nextCount };
-  };
+  }, [positionCounts]);
 
   const makeMove = useCallback((from, to, promotion) => {
     try {
@@ -122,29 +130,48 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
       console.error('Move failed:', error);
     }
     return false;
-  }, [game, positionCounts]);
+  }, [game, updatePositionCounts]);
 
-  // CPU makes a move when it's their turn
+  // CPU makes a move when it's their turn.
+  // isThinking is NOT in the dep array — it is only set inside this effect,
+  // so including it would cause an infinite re-run. We use a ref to read
+  // the latest value without making it a dep.
   useEffect(() => {
-    if (gameResult.over || game.turn() === playerColor || isThinking) {
+    if (gameResult.over || game.turn() === playerColor || isThinkingRef.current) {
       return;
     }
 
-    const cpuTimeout = setTimeout(() => {
-      setIsThinking(true);
-      
-      // Small delay to make CPU feel more natural
-      setTimeout(() => {
-        const bestMove = getBestMove(game, difficulty);
-        if (bestMove) {
-          makeMove(bestMove.from, bestMove.to, bestMove.promotion);
-        }
-        setIsThinking(false);
-      }, 300 + Math.random() * 400);
-    }, 100);
+    let cancelled = false;
+    isThinkingRef.current = true;
+    setIsThinking(true);
 
-    return () => clearTimeout(cpuTimeout);
-  }, [game, gameResult.over, playerColor, isThinking, getBestMove, difficulty, makeMove]);
+    // Natural-feel delay before the engine responds, then async minimax in worker
+    const thinkDelay = setTimeout(() => {
+      getBestMove(game, difficulty)
+        .then((bestMove) => {
+          if (cancelled) return;
+          if (bestMove) {
+            makeMove(bestMove.from, bestMove.to, bestMove.promotion);
+          }
+          isThinkingRef.current = false;
+          setIsThinking(false);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            isThinkingRef.current = false;
+            setIsThinking(false);
+          }
+        });
+    }, 300 + Math.random() * 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(thinkDelay);
+      isThinkingRef.current = false;
+      setIsThinking(false);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game, gameResult.over, playerColor, getBestMove, difficulty, makeMove]);
 
   const handleSquareClick = useCallback((square) => {
     if (promotionState || gameResult.over || isThinking) {

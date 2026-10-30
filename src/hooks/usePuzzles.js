@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { PUZZLE_LEVELS } from '../utils/puzzles';
 
@@ -20,13 +20,17 @@ export function usePuzzles() {
 
   const currentLevel = PUZZLE_LEVELS[currentLevelIndex];
   const currentPuzzle = currentLevel.puzzles[currentPuzzleIndex];
-  const board = game.board();
+  const board = useMemo(() => game.board(), [game]);
 
-  const legalMoves = selectedSquare
-    ? game.moves({ square: selectedSquare, verbose: true })
-    : [];
+  const legalMoves = useMemo(
+    () => (selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : []),
+    [game, selectedSquare]
+  );
 
-  const legalMoveSquares = legalMoves.map((move) => move.to);
+  const legalMoveSquares = useMemo(
+    () => legalMoves.map((move) => move.to),
+    [legalMoves]
+  );
 
   const showFeedback = (message, type) => {
     setFeedback({ message, type });
@@ -64,6 +68,45 @@ export function usePuzzles() {
     }
 
     return toSquare === expectedMove;
+  }, [currentPuzzle, moveIndex]);
+
+  const playOpponentResponse = useCallback((currentGame) => {
+    if (!currentPuzzle || moveIndex >= currentPuzzle.solution.length) {
+      setIsWaitingForOpponent(false);
+      return;
+    }
+
+    const opponentMove = currentPuzzle.solution[moveIndex];
+    if (opponentMove) {
+      const fromSquare = opponentMove.substring(0, 2);
+      const toSquare = opponentMove.substring(2, 4);
+      const promotion = opponentMove.length > 4 ? opponentMove[4] : undefined;
+
+      try {
+        const nextGame = new Chess(currentGame.fen());
+        const moveResult = nextGame.move({
+          from: fromSquare,
+          to: toSquare,
+          promotion
+        });
+
+        if (moveResult) {
+          setLastMove({
+            from: moveResult.from,
+            to: moveResult.to,
+            captured: Boolean(moveResult.captured),
+            piece: moveResult.piece,
+            promotion: moveResult.promotion || null,
+          });
+          setGame(nextGame);
+          setMoveIndex(moveIndex + 1);
+        }
+      } catch (error) {
+        console.error('Opponent move failed:', error);
+      }
+    }
+
+    setIsWaitingForOpponent(false);
   }, [currentPuzzle, moveIndex]);
 
   const makeMove = useCallback((from, to, promotion) => {
@@ -121,46 +164,7 @@ export function usePuzzles() {
       console.error('Move failed:', error);
     }
     return false;
-  }, [game, moveIndex, currentPuzzle, isCorrectMove, solvedPuzzles]);
-
-  const playOpponentResponse = useCallback((currentGame) => {
-    if (!currentPuzzle || moveIndex >= currentPuzzle.solution.length) {
-      setIsWaitingForOpponent(false);
-      return;
-    }
-
-    const opponentMove = currentPuzzle.solution[moveIndex];
-    if (opponentMove) {
-      const fromSquare = opponentMove.substring(0, 2);
-      const toSquare = opponentMove.substring(2, 4);
-      const promotion = opponentMove.length > 4 ? opponentMove[4] : undefined;
-
-      try {
-        const nextGame = new Chess(currentGame.fen());
-        const moveResult = nextGame.move({
-          from: fromSquare,
-          to: toSquare,
-          promotion
-        });
-
-        if (moveResult) {
-          setLastMove({
-            from: moveResult.from,
-            to: moveResult.to,
-            captured: Boolean(moveResult.captured),
-            piece: moveResult.piece,
-            promotion: moveResult.promotion || null,
-          });
-          setGame(nextGame);
-          setMoveIndex(moveIndex + 1);
-        }
-      } catch (error) {
-        console.error('Opponent move failed:', error);
-      }
-    }
-
-    setIsWaitingForOpponent(false);
-  }, [currentPuzzle, moveIndex]);
+  }, [game, moveIndex, currentPuzzle, isCorrectMove, solvedPuzzles, playOpponentResponse]);
 
   const handleSquareClick = useCallback((square) => {
     if (isWaitingForOpponent) {

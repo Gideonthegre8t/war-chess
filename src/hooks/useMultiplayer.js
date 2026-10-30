@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ??
+  (typeof window !== 'undefined' && window.location?.hostname
+    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    : 'http://localhost:3001');
 
 export function useMultiplayer() {
   const [socket, setSocket] = useState(null);
@@ -85,10 +89,10 @@ export function useMultiplayer() {
     };
   }, []);
 
-  const createRoom = useCallback((callback) => {
+  const createRoom = useCallback((timeControlId, callback) => {
     if (!socket) return;
 
-    socket.emit('create-room', (response) => {
+    socket.emit('create-room', { timeControlId }, (response) => {
       if (response.success) {
         setRoomCode(response.roomCode);
       }
@@ -120,10 +124,10 @@ export function useMultiplayer() {
     socket.emit('resign', { roomCode });
   }, [socket, roomCode]);
 
-  const requestNewGame = useCallback(() => {
+  const requestNewGame = useCallback((timeControlId) => {
     if (!socket || !roomCode) return;
 
-    socket.emit('new-game', { roomCode });
+    socket.emit('new-game', { roomCode, timeControlId });
   }, [socket, roomCode]);
 
   const offerDraw = useCallback(() => {
@@ -144,12 +148,6 @@ export function useMultiplayer() {
     socket.emit('draw-response', { roomCode, accept });
   }, [socket, roomCode]);
 
-  const sendFlagFall = useCallback((color) => {
-    if (!socket || !roomCode) return;
-
-    socket.emit('flag-fall', { roomCode, color });
-  }, [socket, roomCode]);
-
   return {
     socket,
     roomCode,
@@ -165,6 +163,5 @@ export function useMultiplayer() {
     offerDraw,
     cancelDraw,
     respondDraw,
-    sendFlagFall,
   };
 }

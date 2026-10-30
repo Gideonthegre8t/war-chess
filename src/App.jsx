@@ -12,9 +12,7 @@ import MoveList from "./components/Chess/MoveList";
 import Warzone from "./components/Warzone/Warzone";
 import LandingPage from "./components/Landing/LandingPage";
 import Lobby from "./components/Lobby/Lobby";
-import ChessClock from "./components/ChessClock/ChessClock";
 import { TIME_CONTROLS } from "./components/ChessClock/chessClockConstants";
-
 import {
   useChessGame,
 } from "./hooks/useChessGame";
@@ -31,10 +29,13 @@ import {
   usePuzzles,
 } from "./hooks/usePuzzles";
 
+const rollColor = (pref) => (pref === "random" ? (Math.random() < 0.5 ? "w" : "b") : pref);
+
 function App() {
   const [currentMode, setCurrentMode] = useState(null);
   const [cpuDifficulty, setCpuDifficulty] = useState("medium");
-  const [playerColor] = useState("w");
+  const [playerColorPreference, setPlayerColorPreference] = useState("w");
+  const [playerColor, setPlayerColor] = useState("w");
   const [timeControl, setTimeControl] = useState("blitz");
   const [clockRunning, setClockRunning] = useState(false);
   const [clockResetKey, setClockResetKey] = useState(0);
@@ -44,7 +45,7 @@ function App() {
 
   // Latest hook instances, read via refs so derived callbacks can stay stable.
   const cpuGameRef = useRef();
-  const multiplayerRef = useRef();
+  const localGameRef = useRef();
 
   const localGame = useChessGame();
   const cpuGame = useChessCpu(playerColor, cpuDifficulty);
@@ -56,8 +57,8 @@ function App() {
   }, [cpuGame]);
 
   useEffect(() => {
-    multiplayerRef.current = multiplayer;
-  }, [multiplayer]);
+    localGameRef.current = localGame;
+  }, [localGame]);
 
   const [warzoneLevel, setWarzoneLevel] = useState("medium");
 
@@ -93,6 +94,21 @@ function App() {
           handleSquareClick: cpuGame.handleSquareClick,
           handlePromotion: cpuGame.handlePromotion,
           resetGame: cpuGame.resetGame,
+        };
+      case 'local':
+        return {
+          game: localGame.game,
+          board: localGame.board,
+          selectedSquare: localGame.selectedSquare,
+          legalMoveSquares: localGame.legalMoveSquares,
+          lastMove: localGame.lastMove,
+          promotionState: localGame.promotionState,
+          checkedKingSquare: localGame.checkedKingSquare,
+          feedback: localGame.feedback,
+          gameResult: localGame.gameResult,
+          handleSquareClick: localGame.handleSquareClick,
+          handlePromotion: localGame.handlePromotion,
+          resetGame: localGame.resetGame,
         };
       case 'puzzles':
         return {
@@ -141,6 +157,9 @@ function App() {
 
   const handleSelectMode = (mode) => {
     setCurrentMode(mode);
+    if (mode === 'cpu') {
+      setPlayerColor(rollColor(playerColorPreference));
+    }
     setClockRunning(false);
     lastMoveRef.current = null;
     setIncrementSignal(0);
@@ -161,7 +180,10 @@ function App() {
 
   const handleNewGame = () => {
     if (currentMode === 'multiplayer') {
-      multiplayer.requestNewGame();
+      multiplayer.requestNewGame(timeControl);
+    } else if (currentMode === 'cpu') {
+      setPlayerColor(rollColor(playerColorPreference));
+      cpuGame.resetGame();
     } else {
       gameState.resetGame();
     }
@@ -177,6 +199,8 @@ function App() {
       multiplayer.resign();
     } else if (currentMode === 'cpu') {
       cpuGame.resign();
+    } else if (currentMode === 'local') {
+      localGame.resign(gameState.game.turn());
     }
     setClockRunning(false);
     setRetreatConfirm(false);
@@ -184,12 +208,37 @@ function App() {
 
   const handleFlagFall = useCallback((color) => {
     setClockRunning(false);
+    // Multiplayer flag fall is decided by the server (P0-1) — the client only
+    // acts on the server's `opponent-flag-fall` in the hook.
     if (currentMode === 'cpu') {
       cpuGameRef.current?.setTimeoutLoser(color);
-    } else if (currentMode === 'multiplayer') {
-      multiplayerRef.current?.handleFlagFall(color);
+    } else if (currentMode === 'local') {
+      localGameRef.current?.setTimeoutLoser(color);
     }
   }, [currentMode]);
+
+  // Clock props handed to ChessGame, which draws a clock bar directly above and
+  // below the board (chess.com-style). Null when the mode has no clock.
+  const isClockMode = currentMode === 'multiplayer' || currentMode === 'cpu' || currentMode === 'local';
+  const orientation = currentMode === 'multiplayer'
+    ? (multiplayer.playerColor || 'w')
+    : (currentMode === 'cpu' ? playerColor : 'w');
+
+  const clockProps = isClockMode
+    ? {
+        activePlayer,
+        timeControl,
+        isRunning: clockRunning,
+        onFlagFall: (currentMode === 'cpu' || currentMode === 'local') ? handleFlagFall : undefined,
+        resetKey: clockResetKey + (currentMode === 'multiplayer' ? multiplayer.resetSignal : 0),
+        incrementTick: incrementSignal,
+        serverSync: currentMode === 'multiplayer' ? multiplayer.clockSync : null,
+        orientation,
+        playerColor: currentMode === 'multiplayer'
+          ? multiplayer.playerColor
+          : (currentMode === 'cpu' ? playerColor : null),
+      }
+    : null;
 
   if (!currentMode) {
     return (
@@ -221,7 +270,7 @@ function App() {
 
         <main className="game-layout">
           <Lobby
-            onCreateRoom={multiplayer.createRoom}
+            onCreateRoom={(cb) => multiplayer.createRoom(timeControl, cb)}
             onJoinRoom={multiplayer.joinRoom}
             isConnected={multiplayer.isConnected}
           />
@@ -242,6 +291,7 @@ function App() {
           <div className="subtitle">
             {currentMode === 'multiplayer' && 'Battle friends online'}
             {currentMode === 'cpu' && 'Train against the computer'}
+            {currentMode === 'local' && 'Two commanders on one screen'}
             {currentMode === 'puzzles' && 'Learn chess tactics'}
           </div>
         </div>
@@ -255,6 +305,28 @@ function App() {
           
           {currentMode === 'cpu' && (
             <div className="control-group">
+              <div className="side-selector">
+                <label>Side:</label>
+                <select
+                  value={playerColorPreference}
+                  onChange={(e) => {
+                    const pref = e.target.value;
+                    setPlayerColorPreference(pref);
+                    const chosen = rollColor(pref);
+                    setPlayerColor(chosen);
+                    cpuGame.resetGame();
+                    setClockRunning(false);
+                    lastMoveRef.current = null;
+                    setIncrementSignal(0);
+                    setClockResetKey(k => k + 1);
+                  }}
+                >
+                  <option value="w">White (♔)</option>
+                  <option value="b">Black (♚)</option>
+                  <option value="random">Random (🎲)</option>
+                </select>
+              </div>
+
               <div className="difficulty-selector">
                 <label>Difficulty:</label>
                 <select
@@ -271,7 +343,33 @@ function App() {
                 <label>Time:</label>
                 <select
                   value={timeControl}
-                  onChange={(e) => setTimeControl(e.target.value)}
+                  onChange={(e) => {
+                    setTimeControl(e.target.value);
+                    if (!clockRunning && !gameState.lastMove) {
+                      setClockResetKey(k => k + 1);
+                    }
+                  }}
+                >
+                  {TIME_CONTROLS.map(tc => (
+                    <option key={tc.id} value={tc.id}>{tc.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {currentMode === 'local' && (
+            <div className="control-group">
+              <div className="time-control-selector">
+                <label>Time:</label>
+                <select
+                  value={timeControl}
+                  onChange={(e) => {
+                    setTimeControl(e.target.value);
+                    if (!clockRunning && !gameState.lastMove) {
+                      setClockResetKey(k => k + 1);
+                    }
+                  }}
                 >
                   {TIME_CONTROLS.map(tc => (
                     <option key={tc.id} value={tc.id}>{tc.label}</option>
@@ -326,7 +424,7 @@ function App() {
             </button>
           )}
 
-          {(currentMode === 'multiplayer' || currentMode === 'cpu') && (
+          {(currentMode === 'multiplayer' || currentMode === 'cpu' || currentMode === 'local') && (
             <button
               type="button"
               className={`retreat-button${retreatConfirm ? ' retreat-confirm' : ''}`}
@@ -437,18 +535,6 @@ function App() {
       {/* MAIN */}
       <main className="game-layout">
         <div className="game-main-content">
-          {/* Chess Clock */}
-          {(currentMode === 'multiplayer' || currentMode === 'cpu') && (
-            <ChessClock
-              activePlayer={activePlayer}
-              timeControl={timeControl}
-              isRunning={clockRunning}
-              onFlagFall={handleFlagFall}
-              resetKey={clockResetKey + (currentMode === 'multiplayer' ? multiplayer.resetSignal : 0)}
-              incrementTick={incrementSignal}
-            />
-          )}
-
           <ChessGame
             game={gameState.game}
             board={gameState.board}
@@ -464,6 +550,7 @@ function App() {
               ? multiplayer.requestNewGame
               : gameState.resetGame}
             warzoneLevel={warzoneLevel}
+            clock={clockProps}
           />
 
           <MoveList

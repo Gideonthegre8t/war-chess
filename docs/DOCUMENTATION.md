@@ -19,8 +19,8 @@ A cinematic multiplayer chess game where the chessboard is the primary gameplay 
 ```
 src/
 ├── components/
-│   ├── Chess/           # ChessGame, ChessBoard, ChessSquare, MoveList, PromotionPicker, GameOverOverlay, ChessStatus, PlayerInfo
-│   ├── ChessClock/      # Dual clock (8 time controls)
+│   ├── Chess/           # ChessGame (wraps board in clock bars), ChessBoard, ChessSquare, MoveList, MoveGhost, PromotionPicker, GameOverOverlay, ChessStatus
+│   ├── ChessClock/      # Board-attached clock bars (Black above / White below), 8 time controls
 │   ├── Landing/         # Mode selection page
 │   ├── Lobby/           # Multiplayer create/join UI
 │   └── Warzone/         # Medieval battlefield visualization
@@ -45,7 +45,7 @@ server/
 - **Hermetic rules:** chess.js is the single source of truth for move validation and game state. No chess rules are implemented by hand. A new `Chess` instance is created per move (`loadPgn` from the current game) for immutable state transitions.
 - **Hook-per-mode:** each game mode has a dedicated hook exposing the same interface (`game`, `board`, `selectedSquare`, `legalMoveSquares`, `lastMove`, `promotionState`, `checkedKingSquare`, `feedback`, `gameResult`, `handleSquareClick`, `handlePromotion`, `resetGame`, plus mode-specific extras). `App.jsx` unifies them via `getGameState()`.
 - **Sound:** Web Audio API oscillators — no audio files.
-- **Server authority (partial, to be completed):** moves are fully server-validated and the PGN is the transport format, so boards cannot drift. **The clock is the hole** — timekeeping is client-side and `flag-fall` is trusted verbatim, and draw-by-repetition is evaluated only on clients. Both are P0-1/P0-2.
+- **Server authority (partial, to be completed):** moves are fully server-validated and the PGN is the transport format, so boards cannot drift. **The clock is server-owned as of P0-1** (2026-10-12) — timekeeping lives in the room record, flag fall is detected by the server, and clients render `clock-sync` without ever claiming a flag. The remaining hole is **draw-by-repetition / 50-move, which is still evaluated only on clients — that is P0-2.**
 
 ## MVP Progress
 
@@ -96,44 +96,50 @@ The warzone reacts to live chess events, and the board now visualizes every move
 - A timed-out "army routed" visual and victory-charge duration scaled by intensity.
 - Emissive glow / brief zoom on the promoted square.
 
-### Known Bugs / Rough Edges — re-audited 2026-09-28
+### Known Bugs / Rough Edges — re-audited 2026-10-12
 
 Ordered by severity. Full reasoning in the [README](../README.md) table.
 
-1. **`flag-fall` is client-authoritative** *(High)* — `server.js:210` accepts whatever colour the client names as the terminal result. Trivial cheat.
-2. **Server never enforces repetition / 50-move draws** *(High)* — the draw engine is client-only, so one side can show a draw overlay while the server keeps the game live.
-3. **Stale draw banner** *(Medium)* — `useMultiplayerChess.js:326` `handleOpponentMove` never clears `drawOffer`; the receiver keeps a dead Accept/Decline banner.
-4. **Time-control change mid-game wipes both clocks** *(Medium)* — `ChessClock.jsx:101`.
-5. **`SERVER_URL` hardcoded to `localhost:3001`** *(Medium)* — `useMultiplayer.js:4`; not deployable.
-6. **`useChessGame` is unreachable dead code** *(Low)* — ~450 lines; `LandingPage` never routes to it.
-7. **`getBestMove` assumes the CPU is Black** *(Low, latent trap)* — `useChessAI.js:165`; breaks the moment Play-as-Black ships.
-8. Landing footer says "Phase 2" *(cosmetic)*.
-9. 4 pre-existing harmless ESLint warnings in `useChessCpu` / `usePuzzles`.
+1. **Server never enforces repetition / 50-move draws** *(High)* — the draw engine is client-only (`getGameResult` runs on the board hook), so one side can show a draw overlay while the server keeps the game live. → **P0-2.**
+2. **Stale draw banner** *(Medium)* — `useMultiplayerChess.js:326` `handleOpponentMove` never clears `drawOffer`; the receiver keeps a dead Accept/Decline banner. → **P0-3.**
+3. **Time-control change mid-game wipes both clocks** *(Medium)* — `ChessClock.jsx:101`. Now CPU-only: multiplayer has no selector, and ChessClock ignores `timeControl` in server-driven mode.
+4. **`SERVER_URL` hardcoded to `localhost:3001`** *(Medium)* — `useMultiplayer.js:4`; not deployable. → **P0-4.**
+5. **`useChessGame` is unreachable dead code** *(Low)* — ~450 lines; `LandingPage` never routes to it. → **P1-2.**
+6. **`getBestMove` assumes the CPU is Black** *(Low, latent trap)* — `useChessAI.js:165`; breaks the moment Play-as-Black ships. → **P1-1.**
+7. Landing footer says "Phase 2" *(cosmetic)*. → **P1-3.**
+8. 4 pre-existing harmless ESLint warnings in `useChessCpu` / `usePuzzles`.
 
+> ~~`flag-fall` is client-authoritative — `server.js:210` trusted whatever colour the client named as the terminal result.~~ **FIXED by P0-1 (2026-10-12):** the server owns the clock, detects flags itself, and the client `flag-fall` handler is deleted.
+>
 > `dist/` was previously listed as a committed-directory bug. **That is false** — `git ls-files dist` is empty and `.gitignore:17` covers it. Already fixed.
 
 ## Where We Continue Next
 
-The previous ordering was polish-first with two integrity bugs filed as "rough edges". That is inverted — **correctness before delight**. The single highest-leverage change is **P0-1: move the clock into the server's room record**, because it is the prerequisite for P0-2 (server draws), P3-1 (persistence) and P1-1 (colour choice), and it closes the only true cheat vector in the game.
+The previous ordering was polish-first with two integrity bugs filed as "rough edges". That is inverted — **correctness before delight**. **P0-1 is done** (2026-10-12): multiplayer timekeeping now lives in the server's room record, the client `flag-fall` claim is gone, and a 14-check `npm run test` covers it. The next highest-leverage change is **P0-2: server-enforced draw rules** — the last High-severity desync, and the direct prerequisite for P3-1 (persistence).
 
 | ID | Item | Severity |
 |----|------|----------|
-| P0-1 | Server-owned clock (kills client `flag-fall` claim, emits `clock-sync`) | **Start here** |
-| P0-2 | Server-enforced draw rules via the shared `getGameResult` engine | High |
-| P0-3 | Clear the stale draw offer on `opponent-move` | Medium |
-| P0-4 | Env-driven `VITE_SERVER_URL` + `.env.example` | Medium |
-| P1-1 | Play as Black in VS CPU — **requires** fixing `getBestMove` to be colour-aware | Feature |
-| P1-2 | Ship `useChessGame` as "Pass & Play" or delete it | Feature |
-| P1-3 | Landing footer → Phase 3 | Cosmetic |
-| P2-1 | Move `useChessAI` to a Web Worker + MVV-LVA move ordering (unblocks "Hard") | Perf |
-| P3-1 | Persist rooms to disk (do *after* P0-1) | Low value |
+| ~~P0-1~~ | ~~Server-owned clock (kills client `flag-fall` claim, emits `clock-sync`)~~ | ✅ **Done 2026-10-12** |
+| ~~P0-2~~ | ~~Server-enforced draw rules via the shared `getGameResult` engine~~ | ✅ **Done 2026-10-28** |
+| ~~P0-3~~ | ~~Clear the stale draw offer on `opponent-move`~~ | ✅ **Done 2026-10-28** |
+| ~~P0-4~~ | ~~Env-driven `VITE_SERVER_URL` + `.env.example`~~ | ✅ **Done 2026-10-28** |
+| ~~P1-1~~ | ~~Play as Black in VS CPU — **requires** fixing `getBestMove` to be colour-aware~~ | ✅ **Done 2026-10-28** |
+| ~~P1-2~~ | ~~Ship `useChessGame` as "Pass & Play"~~ | ✅ **Done 2026-10-28** |
+| ~~P1-3~~ | ~~Landing footer → Phase 3~~ | ✅ **Done 2026-10-28** |
+| ~~P2-1~~ | ~~Move `useChessAI` to a Web Worker + MVV-LVA move ordering~~ | ✅ **Done 2026-10-28** |
+| ~~P3-1~~ | ~~Persist rooms to disk~~ | ✅ **Done 2026-10-28** |
 | P4-1..3 | War Engine: intensity → shake/flash/charge, timeout "army routed", promotion glow | Delight |
+| P5-1 | Deploy: Render/Railway backend + Vercel/Netlify frontend + env var guide | Launch |
+| P5-2 | Mobile touch support: tap-to-select, touch events on squares | UX |
+| P5-3 | Spectator mode: read-only board via room code | Feature |
 
 See the README for the full expanded task descriptions and acceptance notes.
 
 ## Session Log
 
-**2026-10-12 — Re-verification (no code changed).** Re-checked the source against the README; the tree is identical to the 2026-09-28 audit. No P0–P3 item has been started; all bug sites reproduce. `npm run lint` → 0/4, `npm run build` → passes. Note: all Phase 2 + Phase 3 work is still uncommitted (last commit `752f550`) — commit a snapshot before starting P0-1 so the integrity fixes are isolated.
+**2026-10-12 — P0-1 landed + snapshot commit.** Committed the Phase 2 + Phase 3 working tree (`752f550`'s successor) so integrity work is isolated. Then implemented the server-owned clock end-to-end: room `clock` record, per-room 1s tick interval that charges/flags/streams `clock-sync`, `make-move` charges the mover and credits increments server-side, clock halts on mate/resign/draw, TIME_CONTROLS values live on the server (client sends only an id), and the client `flag-fall` handler is deleted. `ChessClock` is now render-only in multiplayer. Verified: `npm run lint` 0/4, `npm run build` passes, and `npm run test` (`smoke-test.mjs`) passes **14/14**. **Open for next session: P0-2.**
+
+**2026-10-12 (b/c) — reported-bug fixes + chess.com polish.** (b) Fixed the frozen VS CPU black clock: the local clock ticked once per 1000ms so fast CPU replies (400–800ms) were never charged; now it ticks every 100ms in sub-second steps with once-only flag detection. (c) Moved the clocks onto the board — `ChessClock` now wraps the board (Black bar above, White bar below, names inline), `ChessGame` takes a `clock` prop, `PlayerInfo` was removed/deleted — and retuned the unit march to chess.com speed (~190ms pawn/move on Medium, trail delay 30ms). Verified: `npm run lint` 0/4, `npm run build` passes.
 
 **2026-09-28 — Audit + re-plan (docs only, no code changed).** Every "fully working" claim in the README was verified against the source; all hold. `npm run lint` → 0 errors / 4 warnings; `npm run build` → passes. Three false statements were corrected (committed `dist/`, playable-as-Black, incomplete bug list) and the plan was re-sequenced to integrity-first. Next session starts at **P0-1**.
 
