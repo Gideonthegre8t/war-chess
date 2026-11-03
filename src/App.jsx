@@ -3,6 +3,7 @@ import {
   useCallback,
   useRef,
   useEffect,
+  useMemo,
 } from "react";
 
 import "./App.css";
@@ -28,6 +29,8 @@ import {
 import {
   usePuzzles,
 } from "./hooks/usePuzzles";
+
+import { useWarzoneBroadcast } from "./hooks/useDisplayLink";
 
 const rollColor = (pref) => (pref === "random" ? (Math.random() < 0.5 ? "w" : "b") : pref);
 
@@ -154,6 +157,34 @@ function App() {
       setClockRunning(false);
     }
   }, [gameState.gameResult?.over]);
+
+  // ---- Second screen ---------------------------------------------------
+  // Mirror the live battle to a `?display=1` window (second monitor, TV,
+  // projector). Plain JSON only — the display rebuilds chess.js from the FEN.
+  const displayState = useMemo(
+    () =>
+      currentMode
+        ? {
+            fen: gameState.game.fen(),
+            turn: gameState.game.turn(),
+            lastMove: gameState.lastMove ?? null,
+            gameResult: gameState.gameResult ?? null,
+            warzoneLevel,
+            mode: currentMode,
+          }
+        : null,
+    [currentMode, gameState.game, gameState.lastMove, gameState.gameResult, warzoneLevel]
+  );
+
+  useWarzoneBroadcast(displayState);
+
+  const openSecondScreen = () => {
+    window.open(
+      `${window.location.origin}${window.location.pathname}?display=1`,
+      'kingdoms-at-war-display',
+      'popup=yes,width=1280,height=800'
+    );
+  };
 
   const handleSelectMode = (mode) => {
     setCurrentMode(mode);
@@ -440,6 +471,15 @@ function App() {
               {retreatConfirm ? 'Confirm Retreat?' : '🏳 Retreat'}
             </button>
           )}
+
+          <button
+            type="button"
+            className="display-button"
+            onClick={openSecondScreen}
+            title="Mirror the warzone on a second monitor"
+          >
+            📺 Second Screen
+          </button>
 
           <button
             type="button"

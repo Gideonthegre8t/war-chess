@@ -15,6 +15,7 @@ function Warzone({
   lastMove = null,
   gameResult = null,
   game = null,
+  showControls = true,
 }) {
   const [battleMessage, setBattleMessage] = useState('The armies await your command.');
   const [battleIcon, setBattleIcon] = useState('⚔');
@@ -132,6 +133,7 @@ function Warzone({
 
   const warzoneClasses = [
     'warzone',
+    `warzone-intensity-${warzoneLevel}`,
     isCheckActive ? 'warzone-alarm' : '',
     isCheckmate ? 'warzone-destroyed' : '',
     moveFlash ? 'warzone-flash' : '',
@@ -266,8 +268,10 @@ function Warzone({
 
       </div>
 
-      {/* CONTROLS */}
+      {/* CONTROLS — hidden on the read-only second screen, where intensity is
+          owned by the game window. */}
 
+      {showControls && (
       <div className="warzone-controls">
 
         <div className="control-title">
@@ -306,6 +310,7 @@ function Warzone({
         </div>
 
       </div>
+      )}
 
     </section>
   );

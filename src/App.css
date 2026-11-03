@@ -746,6 +746,48 @@ button {
   background: #17221c;
 
   border: 1px solid #303b32;
+
+  /* P4-1 — intensity knobs. Every cinematic below reads these instead of
+     hard-coding its own magnitude, so one setting drives shake, flash and
+     the victory charge together. */
+  --war-shake: 1;
+  --war-flash-alpha: 0.9;
+  --war-charge: 38px;
+  --war-charge-dur: 1.6s;
+}
+
+.warzone-intensity-off {
+  --war-shake: 0;
+  --war-flash-alpha: 0;
+  --war-charge: 0px;
+  --war-charge-dur: 0.01s;
+}
+
+.warzone-intensity-low {
+  --war-shake: 0.55;
+  --war-flash-alpha: 0.45;
+  --war-charge: 20px;
+  --war-charge-dur: 2s;
+}
+
+.warzone-intensity-medium {
+  --war-shake: 1;
+  --war-flash-alpha: 0.9;
+  --war-charge: 38px;
+  --war-charge-dur: 1.6s;
+}
+
+.warzone-intensity-high {
+  --war-shake: 1.7;
+  --war-flash-alpha: 1;
+  --war-charge: 58px;
+  --war-charge-dur: 1.15s;
+}
+
+/* With intensity off the war engine is silent: no flash, no shake, no charge. */
+.warzone-intensity-off .warzone-flash,
+.warzone-intensity-off.warzone-destroyed {
+  animation: none;
 }
 
 /* =========================
@@ -922,11 +964,11 @@ button {
 @keyframes battleFlash {
   0% {
     box-shadow:
-      inset 0 0 0 3px rgba(255, 230, 160, 0.9),
-      0 0 40px rgba(255, 200, 100, 0.5);
+      inset 0 0 0 3px rgb(255 230 160 / var(--war-flash-alpha, 0.9)),
+      0 0 40px rgb(255 200 100 / calc(var(--war-flash-alpha, 0.9) * 0.55));
   }
   100% {
-    box-shadow: inset 0 0 0 0 rgba(255, 230, 160, 0), 0 0 0 rgba(255, 200, 100, 0);
+    box-shadow: inset 0 0 0 0 rgb(255 230 160 / 0), 0 0 0 rgb(255 200 100 / 0);
   }
 }
 
@@ -1001,25 +1043,26 @@ button {
   text-shadow:
     0 0 14px rgba(255, 200, 60, 0.95);
 
-  animation: victoryCharge 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: victoryCharge var(--war-charge-dur, 1.6s) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .army-black.army-victorious {
   animation-name: victoryChargeBlack;
 }
 
+/* Charge distance scales with intensity (P4-1). */
 @keyframes victoryCharge {
   0% { transform: translateX(0) scale(1); }
-  40% { transform: translateX(46px) scale(1.25); }
-  70% { transform: translateX(30px) scale(1.1); }
-  100% { transform: translateX(38px) scale(1.18); }
+  40% { transform: translateX(var(--war-charge, 38px)) scale(1.25); }
+  70% { transform: translateX(calc(var(--war-charge, 38px) * 0.66)) scale(1.1); }
+  100% { transform: translateX(calc(var(--war-charge, 38px) * 0.84)) scale(1.18); }
 }
 
 @keyframes victoryChargeBlack {
   0% { transform: translateX(0) scale(1); }
-  40% { transform: translateX(-46px) scale(1.25); }
-  70% { transform: translateX(-30px) scale(1.1); }
-  100% { transform: translateX(-38px) scale(1.18); }
+  40% { transform: translateX(calc(var(--war-charge, 38px) * -1)) scale(1.25); }
+  70% { transform: translateX(calc(var(--war-charge, 38px) * -0.66)) scale(1.1); }
+  100% { transform: translateX(calc(var(--war-charge, 38px) * -0.84)) scale(1.18); }
 }
 
 .army-defeated {
@@ -1187,14 +1230,15 @@ button {
   animation: warzoneShake 1.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* Shake magnitude scales with intensity (P4-1). */
 @keyframes warzoneShake {
   0%, 100% { transform: translate(0, 0); }
-  12% { transform: translate(-8px, 3px); }
-  24% { transform: translate(7px, -3px); }
-  36% { transform: translate(-5px, 2px); }
-  48% { transform: translate(4px, -1px); }
-  60% { transform: translate(-3px, 1px); }
-  72% { transform: translate(2px, 0); }
+  12% { transform: translate(calc(-8px * var(--war-shake, 1)), calc(3px * var(--war-shake, 1))); }
+  24% { transform: translate(calc(7px * var(--war-shake, 1)), calc(-3px * var(--war-shake, 1))); }
+  36% { transform: translate(calc(-5px * var(--war-shake, 1)), calc(2px * var(--war-shake, 1))); }
+  48% { transform: translate(calc(4px * var(--war-shake, 1)), calc(-1px * var(--war-shake, 1))); }
+  60% { transform: translate(calc(-3px * var(--war-shake, 1)), calc(1px * var(--war-shake, 1))); }
+  72% { transform: translate(calc(2px * var(--war-shake, 1)), 0); }
 }
 
 .castle-fallen {

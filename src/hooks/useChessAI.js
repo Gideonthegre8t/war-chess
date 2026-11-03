@@ -27,21 +27,25 @@ export function useChessAI() {
       { type: 'module' }
     );
 
+    // Captured for the lifetime of this effect so the cleanup below always
+    // drains the same map (the ref itself could point elsewhere by then).
+    const pendingRequests = pendingRef.current;
+
     worker.onmessage = (event) => {
       const { id, move } = event.data;
-      const pending = pendingRef.current.get(id);
-      if (pending) {
-        pendingRef.current.delete(id);
-        pending.resolve(move);
+      const request = pendingRequests.get(id);
+      if (request) {
+        pendingRequests.delete(id);
+        request.resolve(move);
       }
     };
 
     worker.onerror = (err) => {
       console.error('[chessAIWorker] error', err);
       // Reject all pending requests on worker error
-      for (const [id, pending] of pendingRef.current) {
-        pendingRef.current.delete(id);
-        pending.reject(err);
+      for (const [id, request] of pendingRequests) {
+        pendingRequests.delete(id);
+        request.reject(err);
       }
     };
 
@@ -49,10 +53,10 @@ export function useChessAI() {
 
     return () => {
       // Cancel all pending promises so callers don't leak
-      for (const [, pending] of pendingRef.current) {
-        pending.reject(new Error('Worker terminated'));
+      for (const [, request] of pendingRequests) {
+        request.reject(new Error('Worker terminated'));
       }
-      pendingRef.current.clear();
+      pendingRequests.clear();
       worker.terminate();
     };
   }, []);

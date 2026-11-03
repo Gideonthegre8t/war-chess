@@ -64,7 +64,13 @@ const loadPersistedRooms = () => {
       if (!item.code) continue;
       const chess = new Chess();
       if (item.pgn) {
-        try { chess.loadPgn(item.pgn); } catch { }
+        try {
+          chess.loadPgn(item.pgn);
+        } catch {
+          // A corrupt snapshot must not stop the server from booting; the
+          // room is restored from a fresh board instead.
+          console.warn(`Snapshot for room ${item.code} has an unreadable PGN; starting from a fresh board.`);
+        }
       }
       rooms.set(item.code, {
         players: [null, null],

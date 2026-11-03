@@ -170,7 +170,6 @@ export function useChessCpu(playerColor = 'w', difficulty = 'medium') {
       isThinkingRef.current = false;
       setIsThinking(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, gameResult.over, playerColor, getBestMove, difficulty, makeMove]);
 
   const handleSquareClick = useCallback((square) => {

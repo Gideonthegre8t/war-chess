@@ -21,6 +21,8 @@ src/
 ├── components/
 │   ├── Chess/           # ChessGame (wraps board in clock bars), ChessBoard, ChessSquare, MoveList, MoveGhost, PromotionPicker, GameOverOverlay, ChessStatus
 │   ├── ChessClock/      # Board-attached clock bars (Black above / White below), 8 time controls
+│   ├── Display/         # Second-screen warzone (read-only, ?display=1)
+│   │   └── warzone3d/   # Three.js scene engine (scene3d.js) + React wrapper
 │   ├── Landing/         # Mode selection page
 │   ├── Lobby/           # Multiplayer create/join UI
 │   └── Warzone/         # Medieval battlefield visualization
@@ -30,7 +32,8 @@ src/
 │   ├── useChessAI.js        # Minimax + alpha-beta + piece-square tables
 │   ├── useMultiplayer.js    # Raw Socket.io connection + room management
 │   ├── useMultiplayerChess.js # Full multiplayer chess game
-│   └── usePuzzles.js        # Puzzle system with level progression
+│   ├── usePuzzles.js        # Puzzle system with level progression
+│   └── useDisplayLink.js    # Second-screen mirror (BroadcastChannel broadcaster + receiver)
 ├── utils/
 │   ├── chessConstants.js
 │   ├── sound.js
@@ -96,26 +99,54 @@ The warzone reacts to live chess events, and the board now visualizes every move
 - A timed-out "army routed" visual and victory-charge duration scaled by intensity.
 - Emissive glow / brief zoom on the promoted square.
 
-### Known Bugs / Rough Edges — re-audited 2026-10-12
+### Phase 4 — Second Screen (P5-0 → P5-2 done, 2026-10-30)
 
-Ordered by severity. Full reasoning in the [README](../README.md) table.
+The warzone can be lifted out of the game window and onto a second monitor, in 3D.
 
-1. **Server never enforces repetition / 50-move draws** *(High)* — the draw engine is client-only (`getGameResult` runs on the board hook), so one side can show a draw overlay while the server keeps the game live. → **P0-2.**
-2. **Stale draw banner** *(Medium)* — `useMultiplayerChess.js:326` `handleOpponentMove` never clears `drawOffer`; the receiver keeps a dead Accept/Decline banner. → **P0-3.**
-3. **Time-control change mid-game wipes both clocks** *(Medium)* — `ChessClock.jsx:101`. Now CPU-only: multiplayer has no selector, and ChessClock ignores `timeControl` in server-driven mode.
-4. **`SERVER_URL` hardcoded to `localhost:3001`** *(Medium)* — `useMultiplayer.js:4`; not deployable. → **P0-4.**
-5. **`useChessGame` is unreachable dead code** *(Low)* — ~450 lines; `LandingPage` never routes to it. → **P1-2.**
-6. **`getBestMove` assumes the CPU is Black** *(Low, latent trap)* — `useChessAI.js:165`; breaks the moment Play-as-Black ships. → **P1-1.**
-7. Landing footer says "Phase 2" *(cosmetic)*. → **P1-3.**
-8. 4 pre-existing harmless ESLint warnings in `useChessCpu` / `usePuzzles`.
+**Transport (P5-0):**
+- `?display=1` renders `DisplayScreen` instead of `App` (`main.jsx`), **lazy-loaded** so the 3D scene never enters the game bundle.
+- `App.jsx` publishes a **plain-JSON** snapshot over `BroadcastChannel('kingdoms-at-war-display')`: `{ fen, turn, lastMove, gameResult, warzoneLevel, mode }`. A display opened mid-game sends `request-sync` and is answered immediately.
+- `Warzone` gained `showControls` so the display is purely a renderer; intensity stays owned by the game window.
+- 📺 **Second Screen** button in the top bar opens the popup. Works in all four modes, no server round-trip.
 
-> ~~`flag-fall` is client-authoritative — `server.js:210` trusted whatever colour the client named as the terminal result.~~ **FIXED by P0-1 (2026-10-12):** the server owns the clock, detects flags itself, and the client `flag-fall` handler is deleted.
->
-> `dist/` was previously listed as a committed-directory bug. **That is false** — `git ls-files dist` is empty and `.gitignore:17` covers it. Already fixed.
+**3D scene (P5-1):** `src/components/Display/warzone3d/`
+- `scene3d.js` — pure Three.js, no React: procedural terrain that is flat inside the board footprint and rises into hills beyond it, an 8×8 board texture inlaid at the centre, two castles, two armies, a marching token with an eased arc, capture particles, a promotion ring, castle collapse + army fade + camera push-in on checkmate, army rout on timeout/resignation, and an idle camera drift while live.
+- `Warzone3D.jsx` — mounts the container and forwards `lastMove` / `gameResult` / `warzoneLevel` / `turn` / `inCheck`. Returns `null` from `createWarzone3D` when WebGL is unavailable, and the display falls back to the 2D warzone.
+- Intensity maps to march duration, shake amplitude and flash strength — the same semantics as the 2D view.
+- Chess squares map directly onto terrain coordinates, so a march reads as a real advance. The board's centre line is the battlefield's centre line.
+
+**Display board (P5-2):** a read-only `ChessBoard` beside the scene (no selection, no legal-move dots, no game-over overlay), with **♟ Board** and **3D / 2D** toggles.
+
+**Remaining (P5-3):** hide the cursor, in-page fullscreen toggle, optional quality setting for weaker GPUs.
+
+The payload is treated as a **contract**: the display knows nothing about app state, so the 3D scene replaced the 2D one without touching the game window.
+
+### Known Bugs / Rough Edges — re-audited 2026-10-30
+
+**No open High- or Medium-severity issues.** Every row from the previous audit is fixed:
+
+- ~~Server never enforces repetition / 50-move draws~~ → **fixed (P0-2)**: the server imports the shared `getGameResult` and terminates the room itself.
+- ~~Stale draw banner~~ → **fixed (P0-3)**: `handleOpponentMove` clears `drawOffer`.
+- ~~`SERVER_URL` hardcoded~~ → **fixed (P0-4)**: `VITE_SERVER_URL` + `.env.example`.
+- ~~`useChessGame` unreachable~~ → **fixed (P1-2)**: shipped as Pass & Play.
+- ~~`getBestMove` assumes Black~~ → **fixed (P1-1)**: the engine is colour-aware; the colour picker exposes White / Black / Random.
+- ~~Landing footer "Phase 2"~~ → **fixed (P1-3)**.
+- ~~ESLint warnings~~ → **fixed 2026-10-30**: ref-cleanup capture in `useChessAI`, stray directive removed from `useChessCpu`, empty `catch` block in `server.js` replaced with a real warning. `npm run lint` is at **0 problems**.
+
+Remaining, all Low:
+
+1. **Time-control change mid-game resets local clocks** — CPU / Pass & Play only (`ChessClock.jsx`); multiplayer has no selector, so no desync.
+2. **Second screen is same-browser only** — BroadcastChannel is same-origin and same-profile by design (`useDisplayLink.js`). Cross-device would need a server channel.
+3. **The second screen is 2D** — the 3D scene is P5-1, not started.
+4. **Room persistence rewrites the whole file per move** — fine for a handful of rooms, not for thousands (`server/server.js`).
+
+> `dist/` is **not** committed — `git ls-files dist` is empty and `.gitignore` covers it.
 
 ## Where We Continue Next
 
-The previous ordering was polish-first with two integrity bugs filed as "rough edges". That is inverted — **correctness before delight**. **P0-1 is done** (2026-10-12): multiplayer timekeeping now lives in the server's room record, the client `flag-fall` claim is gone, and a 14-check `npm run test` covers it. The next highest-leverage change is **P0-2: server-enforced draw rules** — the last High-severity desync, and the direct prerequisite for P3-1 (persistence).
+**P0 through P3 are complete** (2026-10-28): the server owns the clock and the draw engine, the product surface matches what the UI exposes (play as Black, Pass & Play), the AI runs in a Web Worker, and rooms survive a restart. This session (2026-10-30) reconciled the two docs, fixed the failing lint, and shipped the **second screen** (P5-0).
+
+What is left is delight and ambition, in this order: **P5-1 (3D warzone behind the existing display payload)** — the user's stated goal — then the cheap P4 war-engine polish, then P6 launch work. Full task breakdown in the [README](../README.md).
 
 | ID | Item | Severity |
 |----|------|----------|
@@ -128,14 +159,21 @@ The previous ordering was polish-first with two integrity bugs filed as "rough e
 | ~~P1-3~~ | ~~Landing footer → Phase 3~~ | ✅ **Done 2026-10-28** |
 | ~~P2-1~~ | ~~Move `useChessAI` to a Web Worker + MVV-LVA move ordering~~ | ✅ **Done 2026-10-28** |
 | ~~P3-1~~ | ~~Persist rooms to disk~~ | ✅ **Done 2026-10-28** |
-| P4-1..3 | War Engine: intensity → shake/flash/charge, timeout "army routed", promotion glow | Delight |
-| P5-1 | Deploy: Render/Railway backend + Vercel/Netlify frontend + env var guide | Launch |
-| P5-2 | Mobile touch support: tap-to-select, touch events on squares | UX |
-| P5-3 | Spectator mode: read-only board via room code | Feature |
+| ~~P5-0~~ | ~~Second-screen display window (`?display=1`, BroadcastChannel mirror)~~ | ✅ **Done 2026-10-30** |
+| ~~P5-1~~ | ~~3D warzone: Three.js terrain, castles, marching units, capture bursts, checkmate camera~~ | ✅ **Done 2026-10-30** |
+| ~~P5-2~~ | ~~Live board panel + 3D/2D toggle on the display~~ | ✅ **Done 2026-10-30** |
+| ~~P4-1~~ | ~~War Engine: intensity → shake magnitude / flash strength / charge distance~~ | ✅ **Done 2026-10-30** |
+| P4-2..3 | Timeout "army routed" visual, promotion glow | Delight |
+| P5-3 | Display chrome: hide cursor, in-page fullscreen, quality setting | UX |
+| P6-1 | Deploy: Render/Railway backend + Vercel/Netlify frontend + env var guide | Launch |
+| P6-2 | Mobile touch support: tap-to-select, touch events on squares | UX |
+| P6-3 | Spectator mode: read-only board via room code | Feature |
 
 See the README for the full expanded task descriptions and acceptance notes.
 
 ## Session Log
+
+**2026-10-30 (b) — 3D second screen + intensity wiring.** Added `three` and built the 3D warzone (`scene3d.js` + `Warzone3D.jsx`): procedural terrain with the board inlaid, castles, armies, marching token, capture bursts, promotion ring, castle collapse and a camera rig. The display now has a live board panel and a 3D/2D toggle (2D is the WebGL fallback). The display route is lazy-loaded after a build showed `three` inflating the game bundle from 343 kB to 885 kB — it is now its own 541 kB chunk. P4-1 wired intensity into `--war-shake` / `--war-flash-alpha` / `--war-charge` / `--war-charge-dur`, so `battleFlash`, `warzoneShake` and `victoryCharge` all scale from one setting. Verified: `npm run lint` 0 problems, `npm run build` passes with the split. The 3D scene itself was **not** visually verified in a browser.
 
 **2026-10-12 — P0-1 landed + snapshot commit.** Committed the Phase 2 + Phase 3 working tree (`752f550`'s successor) so integrity work is isolated. Then implemented the server-owned clock end-to-end: room `clock` record, per-room 1s tick interval that charges/flags/streams `clock-sync`, `make-move` charges the mover and credits increments server-side, clock halts on mate/resign/draw, TIME_CONTROLS values live on the server (client sends only an id), and the client `flag-fall` handler is deleted. `ChessClock` is now render-only in multiplayer. Verified: `npm run lint` 0/4, `npm run build` passes, and `npm run test` (`smoke-test.mjs`) passes **14/14**. **Open for next session: P0-2.**
 

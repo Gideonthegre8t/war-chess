@@ -1,0 +1,339 @@
+/* =====================================================
+   SECOND SCREEN (display window, ?display=1)
+   Full-bleed warzone for a second monitor / projector.
+===================================================== */
+
+.display-root {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #0b0f13;
+  color: #d8dee4;
+
+  overflow: hidden;
+}
+
+/* =========================
+   TOP BAR
+========================= */
+
+.display-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  flex-wrap: wrap;
+  gap: 12px;
+
+  padding: 14px 22px;
+
+  border-bottom: 1px solid #21262d;
+  background: #11161c;
+}
+
+.display-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.display-crown {
+  font-size: 30px;
+  color: #d4af37;
+  line-height: 1;
+}
+
+.display-brand h1 {
+  margin: 0;
+
+  font-size: 20px;
+  letter-spacing: 4px;
+  font-weight: 700;
+
+  color: #f0f3f6;
+}
+
+.display-mode {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 10px;
+  letter-spacing: 2.5px;
+
+  color: #8b949e;
+}
+
+.display-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  flex-wrap: wrap;
+
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.display-toggle {
+  display: flex;
+
+  border: 1px solid #30363d;
+  border-radius: 999px;
+
+  overflow: hidden;
+}
+
+.display-toggle button,
+.display-board-toggle {
+  padding: 5px 12px;
+
+  border: none;
+  border-radius: 0;
+
+  background: transparent;
+  color: #8b949e;
+
+  font-size: 11px;
+  letter-spacing: 2px;
+
+  cursor: pointer;
+}
+
+.display-toggle button.is-active {
+  background: #1f6feb;
+  color: #f0f3f6;
+}
+
+.display-toggle button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.display-board-toggle {
+  border: 1px solid #30363d;
+  border-radius: 999px;
+
+  color: #8b949e;
+}
+
+.display-board-toggle.is-active {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.display-live {
+  color: #3fb950;
+
+  animation: display-pulse 2s ease-in-out infinite;
+}
+
+.display-turn {
+  padding: 5px 10px;
+
+  border: 1px solid #30363d;
+  border-radius: 999px;
+
+  color: #c9d1d9;
+}
+
+@keyframes display-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* =========================
+   STAGE
+========================= */
+
+.display-stage {
+  flex: 1;
+
+  min-height: 0;
+  padding: 16px;
+
+  display: flex;
+  gap: 16px;
+}
+
+.display-scene {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+}
+
+.display-scene > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- 3D stage --- */
+
+.warzone3d {
+  position: relative;
+
+  min-height: 0;
+
+  border: 1px solid #303b32;
+  border-radius: 10px;
+
+  background: #0b0f13;
+
+  overflow: hidden;
+}
+
+/* --- 2D panel reused full-bleed --- */
+
+.display-scene .warzone-panel {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.display-scene .warzone {
+  flex: 1;
+
+  min-height: 0;
+}
+
+/* The battle-message strip is sized for the small side panel; scale it up so
+   the commentary is readable from across the room. */
+.display-stage .battle-message {
+  font-size: 18px;
+  line-height: 1.45;
+
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+
+  padding: 18px 20px;
+}
+
+.display-stage .message-icon {
+  font-size: 22px;
+}
+
+/* =========================
+   BOARD PANEL
+========================= */
+
+.display-board-panel {
+  flex: 0 0 auto;
+
+  width: min(34%, 380px);
+
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+}
+
+.display-board-panel .board-wrapper {
+  width: 100%;
+}
+
+.display-board-panel .board {
+  width: 100%;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.display-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  flex-wrap: wrap;
+  gap: 10px;
+
+  padding: 12px 22px;
+
+  border-top: 1px solid #21262d;
+  background: #11161c;
+
+  font-size: 12px;
+  letter-spacing: 1px;
+
+  color: #8b949e;
+}
+
+.display-last-move {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  color: #c9d1d9;
+}
+
+.display-result {
+  font-weight: 700;
+  letter-spacing: 2px;
+
+  color: #d4af37;
+}
+
+/* =========================
+   WAITING / UNSUPPORTED
+========================= */
+
+.display-waiting {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+  padding: 24px;
+
+  text-align: center;
+}
+
+.display-waiting-icon {
+  font-size: 64px;
+  color: #d4af37;
+}
+
+.display-waiting h1 {
+  margin: 0;
+
+  font-size: 22px;
+  letter-spacing: 5px;
+
+  color: #f0f3f6;
+}
+
+.display-waiting p {
+  margin: 0;
+  max-width: 44ch;
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  color: #8b949e;
+}
+
+/* Narrow windows (a phone used as a second screen) stack the board under the
+   scene instead of squeezing both. */
+@media (max-width: 900px) {
+  .display-stage {
+    flex-direction: column;
+  }
+
+  .display-board-panel {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
